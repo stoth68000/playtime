@@ -58,9 +58,10 @@ textarea {
 }
 
 .shell {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-columns: 224px 1fr;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -70,6 +71,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  min-height: 0;
 }
 
 .brand {
