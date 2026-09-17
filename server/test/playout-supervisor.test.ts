@@ -136,10 +136,18 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 {
   const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
   const first = await supervisor.start(entry());
-  const second = await supervisor.restart(first.id);
-  assert.equal(second.restartCount, 1);
-  await supervisor.stop(second.id);
-  await waitForState(second, "exited");
+  const restarted = await supervisor.restart(first.id);
+  assert.equal(restarted.id, first.id);
+  assert.equal(restarted.restartCount, 1);
+  assert.equal(supervisor.list().length, 1);
+  await supervisor.stop(restarted.id);
+  await waitForState(restarted, "exited");
+  const restartedAgain = await supervisor.restart(restarted.id);
+  assert.equal(restartedAgain.id, restarted.id);
+  assert.equal(restartedAgain.restartCount, 2);
+  assert.equal(supervisor.list().length, 1);
+  await supervisor.stop(restartedAgain.id);
+  await waitForState(restartedAgain, "exited");
   supervisor.clearCompleted();
 }
 

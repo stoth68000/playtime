@@ -11,6 +11,7 @@ interface RunningProcess {
   child: ChildProcess;
   log: WriteStream;
   instance: PlayoutInstance;
+  exitPromise: Promise<void>;
   forceStopTimer?: NodeJS.Timeout;
 }
 
@@ -113,23 +114,26 @@ export class PlayoutSupervisor {
   }
 
   async restart(id: string): Promise<PlayoutInstance> {
-    const old = this.instances.get(id);
-    if (!old) throw new Error("Playout not found");
-    if (["starting", "running", "restarting"].includes(old.state)) await this.stop(id);
-    old.state = "restarting";
-    const entry: CollectionPlayout = {
-      id: old.entryId ?? nanoid(),
-      label: old.label,
-      filePath: old.filePath,
-      target: old.target,
-      loop: true,
-      autoRestart: false,
-      enabled: true
-    };
-    const next = await this.start(entry);
-    next.restartCount = old.restartCount + 1;
-    this.events.emit("playout.restarted", `Restarted ${old.label}`, { oldId: id, id: next.id });
-    return next;
+    const instance = this.instances.get(id);
+    if (!instance) throw new Error("Playout not found");
+    const running = this.running.get(id);
+    if (running) {
+      await this.stop(id);
+      await running.exitPromise;
+    }
+    instance.state = "restarting";
+    instance.restartCount += 1;
+    instance.startedAt = new Date().toISOString();
+    instance.stoppedAt = undefined;
+    instance.exitCode = undefined;
+    instance.signal = undefined;
+    instance.failureReason = undefined;
+    instance.pid = undefined;
+    instance.command = this.renderCommand(instance.filePath, instance.target);
+    this.validateCommand(instance.command, instance.filePath, instance.target);
+    await this.launch(instance, false);
+    this.events.emit("playout.restarted", `Restarted ${instance.label}`, { id });
+    return instance;
   }
 
   async stopCollection(collection: Collection): Promise<number> {
@@ -170,6 +174,10 @@ export class PlayoutSupervisor {
     instance.logPath = path.join(resolveAppPath(this.settings.logsDir), "playouts", `${instance.id}.log`);
     const log = createWriteStream(instance.logPath, { flags: "a" });
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    let resolveExit: () => void = () => {};
+    const exitPromise = new Promise<void>((resolve) => {
+      resolveExit = resolve;
+    });
     let logClosed = false;
     const closeLog = () => {
       if (!logClosed) {
@@ -179,7 +187,7 @@ export class PlayoutSupervisor {
     };
     instance.pid = child.pid;
     instance.state = "running";
-    this.running.set(instance.id, { child, log, instance });
+    this.running.set(instance.id, { child, log, instance, exitPromise });
     this.events.emit("playout.started", `Started ${instance.label}`, { id: instance.id, pid: child.pid });
 
     const capture = (stream: "stdout" | "stderr", chunk: Buffer) => {
@@ -200,6 +208,7 @@ export class PlayoutSupervisor {
       instance.stoppedAt = new Date().toISOString();
       instance.recentLogs = [...instance.recentLogs, `[error] ${error.message}`].slice(-80);
       closeLog();
+      resolveExit();
       this.events.emit("playout.failed", `${instance.label} failed to start`, { id: instance.id, error: error.message });
     });
     child.on("exit", (code, signal) => {
@@ -212,6 +221,7 @@ export class PlayoutSupervisor {
       instance.stoppedAt = new Date().toISOString();
       instance.state = code === 0 || instance.state === "stopping" ? "exited" : "failed";
       instance.failureReason = instance.state === "failed" ? `Exited with code ${code ?? "unknown"}${signal ? ` (${signal})` : ""}` : undefined;
+      resolveExit();
       this.events.emit("playout.exited", `${instance.label} exited`, { id: instance.id, code, signal });
       if (autoRestart && instance.state === "failed") {
         instance.restartCount += 1;
