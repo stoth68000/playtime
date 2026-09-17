@@ -322,6 +322,10 @@ h2 {
   font-size: 12px;
 }
 
+.library-table .video-cell {
+  font-size: 12px;
+}
+
 .row.head {
   min-height: 36px;
   color: #94a1b0;

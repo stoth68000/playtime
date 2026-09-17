@@ -48,8 +48,34 @@ function formatBitrate(value?: number): string {
 function videoSummary(file: LibraryFile): string {
   const video = file.metadata.videoStreams?.[0];
   if (!video) return "-";
-  const size = video.width && video.height ? `${video.width}x${video.height}` : "";
-  return [video.codec, size, video.frameRate, video.fieldOrder].filter(Boolean).join(" ");
+  const size = video.width && video.height ? `${video.width} x ${video.height}${scanType(video.fieldOrder)}` : "";
+  const rate = formatFrameRate(video.frameRate);
+  const codec = formatVideoCodec(video.codec);
+  return [size, rate, codec ? `(${codec})` : undefined].filter(Boolean).join(" ");
+}
+
+function formatFrameRate(value?: string): string | undefined {
+  if (!value) return undefined;
+  const [numerator, denominator] = value.split("/").map(Number);
+  const rate = denominator ? numerator / denominator : Number(value);
+  if (!Number.isFinite(rate) || rate <= 0) return undefined;
+  return rate.toFixed(rate >= 100 ? 1 : 2).replace(/\.00$/, "");
+}
+
+function scanType(fieldOrder?: string): string {
+  if (!fieldOrder) return "";
+  return fieldOrder === "progressive" ? "p" : "i";
+}
+
+function formatVideoCodec(codec?: string): string | undefined {
+  if (!codec) return undefined;
+  const names: Record<string, string> = {
+    h264: "H.264",
+    hevc: "HEVC",
+    mpeg2video: "MPEG-2",
+    mpeg4: "MPEG-4"
+  };
+  return names[codec] ?? codec.toUpperCase();
 }
 
 function audioSummary(file: LibraryFile): string {
@@ -389,7 +415,7 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
             <span className="truncate"><strong>{file.filename}</strong><small>{file.path}</small></span>
             <span>{formatDuration(file.metadata.duration)}</span>
             <span>{formatBitrate(file.metadata.bitrate)}</span>
-            <span className="truncate">{videoSummary(file)}</span>
+            <span className="truncate video-cell">{videoSummary(file)}</span>
             <span className="truncate">{audioSummary(file)}</span>
             <span>{file.metadata.packetSize ? `${file.metadata.packetSize} B` : file.metadataStatus}</span>
             <span><button onClick={() => addFile(file)}>Add</button></span>
