@@ -382,14 +382,13 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
     <section className="panel">
       <div className="toolbar"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search library" /><button onClick={() => void rescan()}><FolderSync size={16} />Rescan</button></div>
       <div className="table library-table">
-        <div className="row head"><span>Preview</span><span>File</span><span>Duration</span><span>Bitrate</span><span>Service</span><span>Video</span><span>Audio</span><span>TS</span><span></span></div>
+        <div className="row head"><span>Preview</span><span>File</span><span>Duration</span><span>Bitrate</span><span>Video</span><span>Audio</span><span>TS</span><span></span></div>
         {files.map((file) => (
           <div className="row" key={file.id}>
             <FileThumbnail file={file} />
             <span className="truncate"><strong>{file.filename}</strong><small>{file.path}</small></span>
             <span>{formatDuration(file.metadata.duration)}</span>
             <span>{formatBitrate(file.metadata.bitrate)}</span>
-            <span className="truncate">{file.metadata.serviceNames?.join(", ") || "-"}</span>
             <span className="truncate">{videoSummary(file)}</span>
             <span className="truncate">{audioSummary(file)}</span>
             <span>{file.metadata.packetSize ? `${file.metadata.packetSize} B` : file.metadataStatus}</span>
