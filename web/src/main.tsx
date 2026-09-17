@@ -114,7 +114,11 @@ function App() {
     setCollections(nextCollections);
     setPlayouts(nextPlayouts);
     setActivity(nextActivity);
-    if (nextCollections.length && activeCollection.playouts.length === 0) setActiveCollection(nextCollections[0]);
+    setActiveCollection((current) => {
+      if (!nextCollections.length) return current.playouts.length ? current : emptyCollection();
+      if (!current.name || (current.name === "new-collection" && !current.playouts.length)) return nextCollections[0];
+      return nextCollections.some((collection) => collection.name === current.name) ? current : nextCollections[0];
+    });
   };
 
   useEffect(() => {
@@ -143,10 +147,26 @@ function App() {
   };
 
   const deleteCollection = async (name: string) => {
-    await api.deleteCollection(name);
-    const nextCollections = await api.collections();
-    setCollections(nextCollections);
-    setActiveCollection(nextCollections[0] ?? emptyCollection());
+    setError("");
+    const previousCollections = collections;
+    const previousActive = activeCollection;
+    const optimisticCollections = collections.filter((collection) => collection.name !== name);
+    setCollections(optimisticCollections);
+    setActiveCollection((current) => (current.name === name ? optimisticCollections[0] ?? emptyCollection() : current));
+    try {
+      await api.deleteCollection(name);
+      const nextCollections = await api.collections();
+      setCollections(nextCollections);
+      setActiveCollection((current) => {
+        if (!nextCollections.length) return emptyCollection();
+        return nextCollections.some((collection) => collection.name === current.name) ? current : nextCollections[0];
+      });
+    } catch (err) {
+      setCollections(previousCollections);
+      setActiveCollection(previousActive);
+      setError(`Delete failed: ${(err as Error).message}`);
+      throw err;
+    }
   };
 
   const updateEntry = (id: string, patch: Partial<CollectionPlayout>) => {
@@ -346,8 +366,8 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   };
   const deleteCollection = async () => {
     if (!savedVersion) return;
-    if (!window.confirm(`Delete collection "${active.name}"?`)) return;
-    await removeCollection(active.name);
+    if (!window.confirm(`Delete collection "${savedVersion.name}"?`)) return;
+    await removeCollection(savedVersion.name);
   };
   return (
     <div className="split">
