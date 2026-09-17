@@ -168,6 +168,38 @@ function App() {
     }
   };
 
+  const stopPlayout = async (id: string) => {
+    setError("");
+    const previousPlayouts = playouts;
+    setPlayouts((current) => current.map((playout) => (
+      playout.id === id ? { ...playout, state: "stopping" } : playout
+    )));
+    try {
+      await api.stopPlayout(id);
+      await refresh();
+    } catch (err) {
+      setPlayouts(previousPlayouts);
+      setError(`Stop failed: ${(err as Error).message}`);
+      throw err;
+    }
+  };
+
+  const restartPlayout = async (id: string) => {
+    setError("");
+    const previousPlayouts = playouts;
+    setPlayouts((current) => current.map((playout) => (
+      playout.id === id ? { ...playout, state: "restarting" } : playout
+    )));
+    try {
+      await api.restartPlayout(id);
+      await refresh();
+    } catch (err) {
+      setPlayouts(previousPlayouts);
+      setError(`Restart failed: ${(err as Error).message}`);
+      throw err;
+    }
+  };
+
   const deleteCollection = async (name: string) => {
     setError("");
     const previousCollections = collections;
@@ -238,7 +270,7 @@ function App() {
         </header>
         {error && <div className="alert danger">{error}</div>}
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
-        {page === "dashboard" && <Dashboard playouts={playouts} onStop={(id) => api.stopPlayout(id).then(refresh)} onRestart={(id) => api.restartPlayout(id).then(refresh)} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: true, autoRestart: false, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
+        {page === "dashboard" && <Dashboard playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: true, autoRestart: false, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
         {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "activity" && <ActivityPage activity={activity} />}
@@ -281,8 +313,8 @@ function Dashboard({ playouts, onStop, onRestart, onDelete, onStartAgain, onClea
             <span>{uptime(p.startedAt)}</span>
             <span className="truncate log-snippet">{p.failureReason ?? p.recentLogs.at(-1) ?? "-"}</span>
             <span className="actions">
-              <button title="Restart" onClick={(event) => { event.stopPropagation(); void onRestart(p.id); }}><RotateCw size={15} /></button>
-              <button title="Stop" disabled={!["starting", "running", "restarting"].includes(p.state)} onClick={(event) => { event.stopPropagation(); void onStop(p.id); }}><Square size={15} /></button>
+              <button title="Restart" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onRestart(p.id); }}><RotateCw size={15} /></button>
+              <button title="Stop" disabled={!["starting", "running", "restarting"].includes(p.state)} onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onStop(p.id); }}><Square size={15} /></button>
               {p.state === "failed" && <button title="Delete failed record" className="danger-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onDelete(p.id); }}><Trash2 size={15} /></button>}
             </span>
           </div>

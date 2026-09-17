@@ -115,7 +115,7 @@ export class PlayoutSupervisor {
   async restart(id: string): Promise<PlayoutInstance> {
     const old = this.instances.get(id);
     if (!old) throw new Error("Playout not found");
-    await this.stop(id);
+    if (["starting", "running", "restarting"].includes(old.state)) await this.stop(id);
     old.state = "restarting";
     const entry: CollectionPlayout = {
       id: old.entryId ?? nanoid(),
