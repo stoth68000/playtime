@@ -1,0 +1,1181 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PlayTime API",
+    "version": "0.1.0",
+    "description": "REST and event-stream API for PlayTime MPEG-TS playout control."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4500",
+      "description": "Local PlayTime backend"
+    }
+  ],
+  "tags": [
+    {
+      "name": "System"
+    },
+    {
+      "name": "Settings"
+    },
+    {
+      "name": "Library"
+    },
+    {
+      "name": "Collections"
+    },
+    {
+      "name": "Playouts"
+    },
+    {
+      "name": "Activity"
+    }
+  ],
+  "paths": {
+    "/openapi.json": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get the OpenAPI document",
+        "operationId": "getOpenApi",
+        "responses": {
+          "200": {
+            "description": "OpenAPI document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get backend health and runtime warnings",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Health result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "tags": ["Settings"],
+        "summary": "Get current settings",
+        "operationId": "getSettings",
+        "responses": {
+          "200": {
+            "description": "Current settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Settings"],
+        "summary": "Replace current settings",
+        "operationId": "saveSettings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Settings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/library/files": {
+      "get": {
+        "tags": ["Library"],
+        "summary": "List indexed library files",
+        "operationId": "listLibraryFiles",
+        "responses": {
+          "200": {
+            "description": "Library files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryFile"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/library/files/{id}": {
+      "get": {
+        "tags": ["Library"],
+        "summary": "Get a library file by id",
+        "operationId": "getLibraryFile",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Library file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryFile"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/library/files/{id}/thumbnail": {
+      "get": {
+        "tags": ["Library"],
+        "summary": "Get a library file thumbnail",
+        "operationId": "getLibraryFileThumbnail",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JPEG thumbnail",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/library/files/{id}/probe-output": {
+      "get": {
+        "tags": ["Library"],
+        "summary": "Get raw ffprobe output for a library file",
+        "operationId": "getProbeOutput",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ffprobe output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TextOutput"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/library/files/{id}/mediainfo-output": {
+      "get": {
+        "tags": ["Library"],
+        "summary": "Get raw MediaInfo output for a library file",
+        "operationId": "getMediaInfoOutput",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MediaInfo output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TextOutput"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/library/rescan": {
+      "post": {
+        "tags": ["Library"],
+        "summary": "Rescan configured library paths",
+        "operationId": "rescanLibrary",
+        "responses": {
+          "200": {
+            "description": "Updated library files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryFile"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collections": {
+      "get": {
+        "tags": ["Collections"],
+        "summary": "List collections",
+        "operationId": "listCollections",
+        "responses": {
+          "200": {
+            "description": "Collections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Collection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Collections"],
+        "summary": "Create or update a collection",
+        "operationId": "saveCollection",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Collection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collections/{name}": {
+      "get": {
+        "tags": ["Collections"],
+        "summary": "Get a collection by name",
+        "operationId": "getCollection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Collections"],
+        "summary": "Replace a collection by name",
+        "operationId": "replaceCollection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Name"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Collection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Collections"],
+        "summary": "Delete a collection and its playout jobs",
+        "operationId": "deleteCollection",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playouts": {
+      "get": {
+        "tags": ["Playouts"],
+        "summary": "List playout jobs",
+        "operationId": "listPlayouts",
+        "responses": {
+          "200": {
+            "description": "Playout jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlayoutInstance"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Playouts"],
+        "summary": "Start one playout job",
+        "operationId": "startPlayout",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionPlayout"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Started playout job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayoutInstance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playouts/collection": {
+      "post": {
+        "tags": ["Playouts"],
+        "summary": "Start enabled playout jobs in a collection",
+        "operationId": "startCollectionPlayouts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Collection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Started playout jobs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlayoutInstance"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playouts/collection/stop": {
+      "post": {
+        "tags": ["Playouts"],
+        "summary": "Stop playout jobs for a collection",
+        "operationId": "stopCollectionPlayouts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Collection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stop count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoppedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playouts/clear-completed": {
+      "post": {
+        "tags": ["Playouts"],
+        "summary": "Delete completed, exited, or failed playout records",
+        "operationId": "clearCompletedPlayouts",
+        "responses": {
+          "200": {
+            "description": "Clear count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClearedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playouts/{id}": {
+      "get": {
+        "tags": ["Playouts"],
+        "summary": "Get a playout job by id",
+        "operationId": "getPlayout",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Playout job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayoutInstance"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Playouts"],
+        "summary": "Delete a playout job record",
+        "operationId": "deletePlayout",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OkResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playouts/{id}/stop": {
+      "post": {
+        "tags": ["Playouts"],
+        "summary": "Stop a running playout job",
+        "operationId": "stopPlayout",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated playout job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayoutInstance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/playouts/{id}/restart": {
+      "post": {
+        "tags": ["Playouts"],
+        "summary": "Restart a playout job in place",
+        "operationId": "restartPlayout",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated playout job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayoutInstance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/activity": {
+      "get": {
+        "tags": ["Activity"],
+        "summary": "List recent activity events",
+        "operationId": "listActivity",
+        "responses": {
+          "200": {
+            "description": "Activity events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEvent"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "tags": ["Activity"],
+        "summary": "Subscribe to activity events",
+        "operationId": "subscribeEvents",
+        "responses": {
+          "200": {
+            "description": "Server-sent activity events",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Name": {
+        "name": "name",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResult"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "required": ["ok", "warnings"],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Settings": {
+        "type": "object",
+        "required": [
+          "serverPort",
+          "libraryPaths",
+          "smootherCommand",
+          "smootherArgs",
+          "metadataProbeCommand",
+          "metadataProbeArgs",
+          "mediaInfoCommand",
+          "collectionsDir",
+          "cacheDir",
+          "logsDir",
+          "defaultLoop",
+          "defaultAutoRestart"
+        ],
+        "properties": {
+          "serverPort": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "libraryPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "smootherCommand": {
+            "type": "string"
+          },
+          "smootherArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadataProbeCommand": {
+            "type": "string"
+          },
+          "metadataProbeArgs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mediaInfoCommand": {
+            "type": "string"
+          },
+          "collectionsDir": {
+            "type": "string"
+          },
+          "cacheDir": {
+            "type": "string"
+          },
+          "logsDir": {
+            "type": "string"
+          },
+          "defaultLoop": {
+            "type": "boolean"
+          },
+          "defaultAutoRestart": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LibraryFile": {
+        "type": "object",
+        "required": ["id", "path", "filename", "size", "modifiedAt", "extension", "metadataStatus", "metadata"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "modifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "extension": {
+            "type": "string"
+          },
+          "metadataStatus": {
+            "type": "string",
+            "enum": ["pending", "basic", "probed", "failed"]
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/FileMetadata"
+          }
+        }
+      },
+      "FileMetadata": {
+        "type": "object",
+        "properties": {
+          "duration": {
+            "type": "number"
+          },
+          "bitrate": {
+            "type": "number"
+          },
+          "packetSize": {
+            "type": "integer"
+          },
+          "formatName": {
+            "type": "string"
+          },
+          "probeScore": {
+            "type": "integer"
+          },
+          "programCount": {
+            "type": "integer"
+          },
+          "transportType": {
+            "type": "string",
+            "enum": ["SPTS", "MPTS"]
+          },
+          "programs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgramMetadata"
+            }
+          },
+          "videoStreams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreamMetadata"
+            }
+          },
+          "audioStreams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreamMetadata"
+            }
+          },
+          "otherStreams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StreamMetadata"
+            }
+          },
+          "codecs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "serviceNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "thumbnailPath": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ProgramMetadata": {
+        "type": "object",
+        "required": ["streamIndexes"],
+        "properties": {
+          "programId": {
+            "type": "integer"
+          },
+          "programNumber": {
+            "type": "integer"
+          },
+          "pmtPid": {
+            "type": "integer"
+          },
+          "pcrPid": {
+            "type": "integer"
+          },
+          "serviceName": {
+            "type": "string"
+          },
+          "serviceProvider": {
+            "type": "string"
+          },
+          "streamIndexes": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "StreamMetadata": {
+        "type": "object",
+        "required": ["index"],
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "pid": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "codec": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "frameRate": {
+            "type": "string"
+          },
+          "fieldOrder": {
+            "type": "string"
+          },
+          "channels": {
+            "type": "integer"
+          },
+          "channelLayout": {
+            "type": "string"
+          },
+          "sampleRate": {
+            "type": "integer"
+          },
+          "bitrate": {
+            "type": "number"
+          }
+        }
+      },
+      "CollectionPlayout": {
+        "type": "object",
+        "required": ["id", "label", "target", "loop", "autoRestart", "enabled"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "fileId": {
+            "type": "string"
+          },
+          "filePath": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string",
+            "examples": ["udp://127.0.0.1:4020", "srt://receiver.example.com:9000"]
+          },
+          "loop": {
+            "type": "boolean"
+          },
+          "autoRestart": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Collection": {
+        "type": "object",
+        "required": ["name", "description", "startupOnBoot", "playouts", "updatedAt"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "startupOnBoot": {
+            "type": "boolean"
+          },
+          "playouts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionPlayout"
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PlayoutState": {
+        "type": "string",
+        "enum": ["starting", "running", "stopping", "exited", "failed", "restarting"]
+      },
+      "PlayoutInstance": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "filePath",
+          "target",
+          "state",
+          "loop",
+          "autoRestart",
+          "restartCount",
+          "command",
+          "recentLogs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "collectionName": {
+            "type": "string"
+          },
+          "entryId": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "filePath": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/PlayoutState"
+          },
+          "loop": {
+            "type": "boolean"
+          },
+          "autoRestart": {
+            "type": "boolean"
+          },
+          "pid": {
+            "type": "integer"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stoppedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "exitCode": {
+            "type": ["integer", "null"]
+          },
+          "signal": {
+            "type": ["string", "null"]
+          },
+          "restartCount": {
+            "type": "integer"
+          },
+          "command": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "logPath": {
+            "type": "string"
+          },
+          "failureReason": {
+            "type": "string"
+          },
+          "recentLogs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ActivityEvent": {
+        "type": "object",
+        "required": ["id", "type", "message", "at"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": true
+        }
+      },
+      "TextOutput": {
+        "type": "object",
+        "required": ["output"],
+        "properties": {
+          "output": {
+            "type": "string"
+          }
+        }
+      },
+      "OkResult": {
+        "type": "object",
+        "required": ["ok"],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "StoppedResult": {
+        "type": "object",
+        "required": ["stopped"],
+        "properties": {
+          "stopped": {
+            "type": "integer"
+          }
+        }
+      },
+      "ClearedResult": {
+        "type": "object",
+        "required": ["cleared"],
+        "properties": {
+          "cleared": {
+            "type": "integer"
+          }
+        }
+      },
+      "ErrorResult": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

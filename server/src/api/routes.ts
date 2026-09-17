@@ -1,4 +1,6 @@
 import { createReadStream } from "node:fs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import type { Collection, CollectionPlayout, Settings } from "../models.js";
 import { SettingsStore } from "../settings/store.js";
@@ -18,6 +20,11 @@ export interface AppServices {
 }
 
 export async function registerRoutes(app: FastifyInstance, services: AppServices): Promise<void> {
+  app.get("/openapi.json", async (_request, reply) => {
+    const spec = await readFile(path.resolve(process.cwd(), "openapi.json"), "utf8");
+    return reply.type("application/json").send(spec);
+  });
+
   app.get("/api/health", async () => ({ ok: true, warnings: services.settingsStore.validateRuntime(services.getSettings()) }));
   app.get("/api/settings", async () => services.getSettings());
   app.put<{ Body: Settings }>("/api/settings", async (request) => {
