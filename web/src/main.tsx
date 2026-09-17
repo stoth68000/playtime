@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Activity, ArrowDown, ArrowUp, Clipboard, Copy, Database, Eye, FolderSync, Library, ListPlus, Play, RotateCw, Save, Search, Settings as SettingsIcon, Square, Terminal, Trash2, X } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, Clipboard, Copy, Database, ExternalLink, Eye, FolderSync, Library, ListPlus, Play, RotateCw, Save, Search, Settings as SettingsIcon, Square, Terminal, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { api } from "./api/client";
 import type { ActivityEvent, Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings } from "./types";
@@ -310,6 +310,7 @@ function App() {
           <button className={clsx({ active: page === "collections" })} onClick={() => setPage("collections")}><Database size={16} />Collections</button>
           <button className={clsx({ active: page === "activity" })} onClick={() => setPage("activity")}><Activity size={16} />Activity</button>
           <button className={clsx({ active: page === "settings" })} onClick={() => setPage("settings")}><SettingsIcon size={16} />Settings</button>
+          <button onClick={() => window.open("/docs", "_blank", "noopener,noreferrer")}><ExternalLink size={16} />API Docs</button>
         </nav>
         <div className="status-block">
           <span className="metric">{playouts.filter((p) => p.state === "running").length}</span>
