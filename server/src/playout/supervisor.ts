@@ -46,9 +46,9 @@ export class PlayoutSupervisor {
     return cleared;
   }
 
-  delete(id: string): PlayoutInstance {
+  delete(id: string): PlayoutInstance | undefined {
     const instance = this.instances.get(id);
-    if (!instance) throw new Error("Playout not found");
+    if (!instance) return undefined;
     if (this.running.has(id) || !["exited", "failed"].includes(instance.state)) throw new Error("Only completed playout records can be deleted");
     this.instances.delete(id);
     this.events.emit("playout.deleted", `Deleted ${instance.label}`, { id });

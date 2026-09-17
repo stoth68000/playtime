@@ -150,6 +150,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
   assert.match(failed.failureReason ?? "", /Exited with code 7/);
   assert.ok(failed.recentLogs.some((line) => line.includes("intentional failure")));
   assert.equal(supervisor.delete(failed.id).id, failed.id);
+  assert.equal(supervisor.delete(failed.id), undefined);
   assert.equal(supervisor.list().length, 0);
 }
 
