@@ -8,9 +8,9 @@
       "fileId": "9cf495a7e86ba136",
       "target": "udp://127.0.0.1:4001",
       "loop": true,
-      "autoRestart": false,
+      "autoRestart": true,
       "enabled": true
     }
   ],
-  "updatedAt": "2026-09-17T11:17:29.607Z"
+  "updatedAt": "2026-09-17T12:59:11.575Z"
 }

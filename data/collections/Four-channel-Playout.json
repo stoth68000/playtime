@@ -1,0 +1,44 @@
+{
+  "name": "Four-channel-Playout",
+  "description": "",
+  "startupOnBoot": false,
+  "playouts": [
+    {
+      "id": "182c8b3b-70f6-49c0-9188-854e57ec1717",
+      "label": "1280x720p5994-avc-dwts-2xac3-20mb-5min.ts",
+      "fileId": "9cf495a7e86ba136",
+      "target": "udp://127.0.0.1:4011",
+      "loop": true,
+      "autoRestart": true,
+      "enabled": true
+    },
+    {
+      "id": "db6a13e8-8ce7-41db-9218-72e2df3c90dd",
+      "label": "1920x1080p5994-avc-bars-16levels-2min.ts",
+      "fileId": "6d2c6ffe4a9909f4",
+      "target": "udp://127.0.0.1:4012",
+      "loop": true,
+      "autoRestart": true,
+      "enabled": true
+    },
+    {
+      "id": "dd244e7b-c7ce-4933-a170-cc7c8e5867b5",
+      "label": "wbp-485000000-mux-10min.ts",
+      "fileId": "fe1fef474b2f544b",
+      "target": "udp://127.0.0.1:4013",
+      "loop": true,
+      "autoRestart": true,
+      "enabled": true
+    },
+    {
+      "id": "2351d76b-bd0d-45e7-b9e8-06351b850dca",
+      "label": "1920x1080i2997-wpbf-tennis-avc-5min.ts",
+      "fileId": "f7b9073b19ae6979",
+      "target": "udp://127.0.0.1:4014",
+      "loop": true,
+      "autoRestart": true,
+      "enabled": true
+    }
+  ],
+  "updatedAt": "2026-09-17T14:58:02.277Z"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "bars-and-tone",
+  "description": "",
+  "startupOnBoot": true,
+  "playouts": [
+    {
+      "id": "af28d65e-7bd6-4b42-bf5e-47ff46542de6",
+      "label": "1920x1080p5994-avc-bars-16levels-2min.ts",
+      "fileId": "6d2c6ffe4a9909f4",
+      "target": "udp://127.0.0.1:4020",
+      "loop": true,
+      "autoRestart": false,
+      "enabled": true
+    }
+  ],
+  "updatedAt": "2026-09-17T14:49:26.068Z"
+}
