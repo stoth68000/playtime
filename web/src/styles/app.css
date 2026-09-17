@@ -260,8 +260,11 @@ h2 {
 }
 
 .thumbnail-cell.entry {
-  width: 68px;
-  height: 44px;
+  width: 102px;
+  height: 66px;
+  border: 1px solid #6f7782;
+  border-radius: 6px;
+  background: transparent;
 }
 
 .thumbnail-placeholder {
@@ -428,7 +431,7 @@ h2 {
 
 .entry-grid {
   display: grid;
-  grid-template-columns: 76px minmax(220px, 1fr) minmax(230px, 1fr) minmax(240px, 1fr) auto auto auto;
+  grid-template-columns: 110px minmax(220px, 1fr) minmax(230px, 1fr) minmax(240px, 1fr) auto auto auto;
   gap: 8px;
   align-items: center;
 }
