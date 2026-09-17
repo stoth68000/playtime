@@ -11,6 +11,7 @@ const root = await fs.mkdtemp(path.join(os.tmpdir(), "playtime-supervisor-"));
 const okScript = path.join(root, "ok.mjs");
 const failScript = path.join(root, "fail.mjs");
 const flakyScript = path.join(root, "flaky.mjs");
+const stubbornScript = path.join(root, "stubborn.mjs");
 const source = path.join(root, "source.ts");
 await fs.writeFile(source, "sample");
 await fs.writeFile(okScript, `
@@ -48,6 +49,13 @@ process.on("SIGTERM", () => {
   process.exit(0);
 });
 `);
+await fs.writeFile(stubbornScript, `
+console.log("ignoring sigterm");
+process.on("SIGTERM", () => {
+  console.error("ignored sigterm");
+});
+setInterval(() => console.log("still running"), 100);
+`);
 
 const baseSettings: Settings = {
   serverPort: 0,
@@ -75,7 +83,7 @@ const entry = (patch: Partial<CollectionPlayout> = {}): CollectionPlayout => ({
 });
 
 async function waitFor(predicate: () => boolean, label: string): Promise<void> {
-  const deadline = Date.now() + 2500;
+  const deadline = Date.now() + 6000;
   while (Date.now() < deadline) {
     if (predicate()) return;
     await new Promise((resolve) => setTimeout(resolve, 25));
@@ -134,6 +142,16 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
   await waitForState(restarted, "running");
   await supervisor.stop(restarted.id);
   await waitForState(restarted, "exited");
+}
+
+{
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [stubbornScript, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const stubborn = await supervisor.start(entry());
+  await waitFor(() => stubborn.recentLogs.some((line) => line.includes("still running")), "stubborn startup");
+  await supervisor.stop(stubborn.id);
+  await waitForState(stubborn, "exited");
+  assert.equal(stubborn.signal, "SIGKILL");
+  assert.ok(stubborn.recentLogs.some((line) => line.includes("SIGKILL")));
 }
 
 console.log("playout supervisor integration tests passed");

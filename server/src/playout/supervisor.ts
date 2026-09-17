@@ -11,7 +11,10 @@ interface RunningProcess {
   child: ChildProcess;
   log: WriteStream;
   instance: PlayoutInstance;
+  forceStopTimer?: NodeJS.Timeout;
 }
+
+const stopGraceMs = 2500;
 
 export class PlayoutSupervisor {
   private running = new Map<string, RunningProcess>();
@@ -83,7 +86,16 @@ export class PlayoutSupervisor {
     if (!instance) throw new Error("Playout not found");
     instance.state = "stopping";
     this.events.emit("playout.stopping", `Stopping ${instance.label}`, { id });
-    if (running) running.child.kill("SIGTERM");
+    if (running) {
+      running.child.kill("SIGTERM");
+      running.forceStopTimer = setTimeout(() => {
+        if (this.running.has(id)) {
+          instance.recentLogs = [...instance.recentLogs, `[system] Process did not exit after SIGTERM; sending SIGKILL`].slice(-80);
+          this.events.emit("playout.force_stopping", `Force stopping ${instance.label}`, { id });
+          running.child.kill("SIGKILL");
+        }
+      }, stopGraceMs);
+    }
     else {
       instance.state = "exited";
       instance.stoppedAt = new Date().toISOString();
@@ -112,7 +124,7 @@ export class PlayoutSupervisor {
   }
 
   async stopCollection(name: string): Promise<number> {
-    const matching = this.list().filter((instance) => instance.collectionName === name && ["starting", "running"].includes(instance.state));
+    const matching = this.list().filter((instance) => instance.collectionName === name && ["starting", "running", "restarting", "stopping"].includes(instance.state));
     await Promise.all(matching.map((instance) => this.stop(instance.id)));
     return matching.length;
   }
@@ -171,6 +183,8 @@ export class PlayoutSupervisor {
       this.events.emit("playout.failed", `${instance.label} failed to start`, { id: instance.id, error: error.message });
     });
     child.on("exit", (code, signal) => {
+      const running = this.running.get(instance.id);
+      if (running?.forceStopTimer) clearTimeout(running.forceStopTimer);
       this.running.delete(instance.id);
       closeLog();
       instance.exitCode = code;
