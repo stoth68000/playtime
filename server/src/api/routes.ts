@@ -29,8 +29,135 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
     <title>PlayTime API Docs</title>
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
     <style>
-      body { margin: 0; background: #0f172a; }
+      :root {
+        color-scheme: dark;
+        --bg: #101418;
+        --panel: #171d23;
+        --panel-2: #202832;
+        --line: #303a45;
+        --text: #e7edf4;
+        --muted: #9aa7b6;
+        --accent: #4fb3c4;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+      }
+      .swagger-ui {
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
       .swagger-ui .topbar { display: none; }
+      .swagger-ui .wrapper {
+        max-width: none;
+        padding: 0 32px;
+      }
+      .swagger-ui .info {
+        margin: 24px 0 18px;
+      }
+      .swagger-ui .info .title,
+      .swagger-ui .info p,
+      .swagger-ui .info li,
+      .swagger-ui .opblock-tag,
+      .swagger-ui .opblock .opblock-summary-description,
+      .swagger-ui table thead tr td,
+      .swagger-ui table thead tr th,
+      .swagger-ui .parameter__name,
+      .swagger-ui .parameter__type,
+      .swagger-ui .response-col_status,
+      .swagger-ui .response-col_description__inner div,
+      .swagger-ui .model,
+      .swagger-ui .model-title,
+      .swagger-ui .model-box,
+      .swagger-ui .model-toggle,
+      .swagger-ui .tab li,
+      .swagger-ui label,
+      .swagger-ui h1,
+      .swagger-ui h2,
+      .swagger-ui h3,
+      .swagger-ui h4,
+      .swagger-ui h5 {
+        color: var(--text);
+      }
+      .swagger-ui .info .title small,
+      .swagger-ui .info .base-url,
+      .swagger-ui .scheme-container,
+      .swagger-ui .opblock-tag small,
+      .swagger-ui .parameter__deprecated,
+      .swagger-ui .parameter__in,
+      .swagger-ui .property.primitive,
+      .swagger-ui .prop-type,
+      .swagger-ui .model .prop .prop-format {
+        color: var(--muted);
+      }
+      .swagger-ui .scheme-container,
+      .swagger-ui .opblock,
+      .swagger-ui .model-box,
+      .swagger-ui section.models {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        box-shadow: none;
+      }
+      .swagger-ui .opblock {
+        border-radius: 6px;
+      }
+      .swagger-ui .opblock .opblock-summary {
+        border-color: var(--line);
+      }
+      .swagger-ui .opblock .opblock-section-header {
+        background: var(--panel-2);
+        box-shadow: none;
+      }
+      .swagger-ui .opblock .opblock-summary-path,
+      .swagger-ui .opblock .opblock-summary-path__deprecated,
+      .swagger-ui .opblock .opblock-summary-operation-id,
+      .swagger-ui .responses-inner h4,
+      .swagger-ui .responses-inner h5,
+      .swagger-ui .execute-wrapper .btn,
+      .swagger-ui .btn {
+        color: var(--text);
+      }
+      .swagger-ui .opblock.opblock-get { border-color: #3c7d8a; background: rgba(79, 179, 196, 0.08); }
+      .swagger-ui .opblock.opblock-post { border-color: #598c62; background: rgba(95, 170, 112, 0.08); }
+      .swagger-ui .opblock.opblock-put { border-color: #a98a42; background: rgba(197, 157, 74, 0.08); }
+      .swagger-ui .opblock.opblock-delete { border-color: #9b4d59; background: rgba(188, 80, 94, 0.08); }
+      .swagger-ui .opblock.opblock-get .opblock-summary-method { background: #287d8f; }
+      .swagger-ui .opblock.opblock-post .opblock-summary-method { background: #347447; }
+      .swagger-ui .opblock.opblock-put .opblock-summary-method { background: #92712d; }
+      .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: #8b3946; }
+      .swagger-ui input,
+      .swagger-ui textarea,
+      .swagger-ui select {
+        background: #0b0f14;
+        border: 1px solid var(--line);
+        color: var(--text);
+      }
+      .swagger-ui .microlight,
+      .swagger-ui .highlight-code {
+        background: #0b0f14 !important;
+        color: #dce6ef !important;
+      }
+      .swagger-ui .btn,
+      .swagger-ui .try-out__btn,
+      .swagger-ui .execute {
+        background: var(--panel-2);
+        border-color: #50616f;
+        box-shadow: none;
+      }
+      .swagger-ui .btn:hover,
+      .swagger-ui .try-out__btn:hover,
+      .swagger-ui .execute:hover {
+        border-color: var(--accent);
+        box-shadow: none;
+      }
+      .swagger-ui a,
+      .swagger-ui .opblock-summary-control:focus {
+        color: var(--accent);
+      }
+      .swagger-ui svg,
+      .swagger-ui .model-toggle::after {
+        filter: invert(1) hue-rotate(180deg);
+      }
     </style>
   </head>
   <body>
