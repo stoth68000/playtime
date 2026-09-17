@@ -236,22 +236,61 @@ h2 {
 }
 
 .thumbnail-cell {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 64px;
   height: 42px;
-  overflow: hidden;
   border: 1px solid #273342;
   border-radius: 4px;
   background: #070a0e;
+  z-index: 1;
 }
 
-.thumbnail-cell img {
+.thumbnail-cell .thumb-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.thumbnail-preview {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  z-index: 40;
+  width: 320px;
+  aspect-ratio: 16 / 9;
+  border: 1px solid #3b526c;
+  border-radius: 6px;
+  background: #05080c;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(0.98);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.thumbnail-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: inherit;
+}
+
+.thumbnail-cell:hover,
+.thumbnail-cell:focus-within {
+  z-index: 50;
+}
+
+.thumbnail-cell:hover .thumbnail-preview,
+.thumbnail-cell:focus-within .thumbnail-preview {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
 }
 
 .thumbnail-cell.small {
@@ -498,12 +537,24 @@ h2 {
   align-items: center;
 }
 
+.entry-status-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
 .entry-toggles label {
   display: flex;
   grid-template-columns: none;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+}
+
+.entry-meta.compact {
+  flex-wrap: nowrap;
+  margin-left: auto;
 }
 
 .source-button {

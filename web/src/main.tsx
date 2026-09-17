@@ -525,9 +525,15 @@ function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; o
 }
 
 function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: "default" | "small" | "entry" | "dashboard" }) {
+  const thumbnailSrc = file?.metadata.thumbnailPath ? `/api/library/files/${encodeURIComponent(file.id)}/thumbnail` : undefined;
   return (
     <span className={clsx("thumbnail-cell", { small: size === "small", entry: size === "entry", dashboard: size === "dashboard" })}>
-      {file?.metadata.thumbnailPath ? <img src={`/api/library/files/${encodeURIComponent(file.id)}/thumbnail`} alt="" /> : <span className="thumbnail-placeholder"><Library size={size === "small" ? 14 : 18} /></span>}
+      {thumbnailSrc ? (
+        <>
+          <img className="thumb-image" src={thumbnailSrc} alt="" />
+          <span className="thumbnail-preview"><img src={thumbnailSrc} alt="" /></span>
+        </>
+      ) : <span className="thumbnail-placeholder"><Library size={size === "small" ? 14 : 18} /></span>}
     </span>
   );
 }
@@ -636,14 +642,16 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
                   </button>
                   {!entry.fileId && <input value={entry.filePath ?? ""} onChange={(e) => updateEntry(entry.id, { filePath: e.target.value })} placeholder="/path/to/file.ts" />}
                   <input value={entry.target} onChange={(e) => updateEntry(entry.id, { target: e.target.value })} placeholder="udp://ip:port or srt://host:port" />
-                  <div className="entry-toggles">
-                    <label><input type="checkbox" checked={entry.enabled} onChange={(e) => updateEntry(entry.id, { enabled: e.target.checked })} />Enabled</label>
-                    <label><input type="checkbox" checked={entry.loop} onChange={(e) => updateEntry(entry.id, { loop: e.target.checked })} />Loop</label>
-                    <label><input type="checkbox" checked={entry.autoRestart} onChange={(e) => updateEntry(entry.id, { autoRestart: e.target.checked })} />Auto restart</label>
+                  <div className="entry-status-row">
+                    <div className="entry-toggles">
+                      <label><input type="checkbox" checked={entry.enabled} onChange={(e) => updateEntry(entry.id, { enabled: e.target.checked })} />Enabled</label>
+                      <label><input type="checkbox" checked={entry.loop} onChange={(e) => updateEntry(entry.id, { loop: e.target.checked })} />Loop</label>
+                      <label><input type="checkbox" checked={entry.autoRestart} onChange={(e) => updateEntry(entry.id, { autoRestart: e.target.checked })} />Auto restart</label>
+                    </div>
+                    {selectedFile && <div className="entry-meta compact"><span>{formatDuration(selectedFile.metadata.duration)}</span><span>{formatBitrate(selectedFile.metadata.bitrate)}</span></div>}
                   </div>
                 </div>
               </div>
-              {selectedFile && <div className="entry-meta"><span>{formatDuration(selectedFile.metadata.duration)}</span><span>{formatBitrate(selectedFile.metadata.bitrate)}</span><span>{videoSummary(selectedFile)}</span><span>{audioSummary(selectedFile)}</span></div>}
               {issues.length > 0 && <div className="entry-errors">{issues.map((issue) => <span key={issue}>{issue}</span>)}</div>}
             </div>
             );
