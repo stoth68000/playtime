@@ -5,7 +5,7 @@
     {
       "id": "demo-1",
       "label": "Demo UDP Feed",
-      "filePath": "./samples/demo.ts",
+      "filePath": "./samples/demo.placeholder",
       "target": "udp://239.10.10.1:5000",
       "loop": true,
       "autoRestart": false,

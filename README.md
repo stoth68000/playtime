@@ -22,3 +22,14 @@ http://127.0.0.1:4500
 ```
 
 Edit `data/settings.json` to point `libraryPaths` at your MPEG-TS library and adjust `smootherArgs` to match your `tstools_bitrate_smoother` command-line contract.
+
+## Metadata
+
+PlayTime probes MPEG-TS files with `ffprobe` by default:
+
+```json
+"metadataProbeCommand": "ffprobe",
+"metadataProbeArgs": ["-v", "error", "-show_format", "-show_streams", "-show_programs", "-of", "json", "{file}"]
+```
+
+Library rescans cache duration, bitrate, packet size, program/service data, codecs, video streams, audio streams, and probe errors in `data/cache/library-index.json`.

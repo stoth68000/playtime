@@ -10,6 +10,8 @@ const settingsSchema = z.object({
   libraryPaths: z.array(z.string()).default(["./samples"]),
   smootherCommand: z.string().default("./bin/tstools_bitrate_smoother"),
   smootherArgs: z.array(z.string()).default(["--input", "{file}", "--output", "{target}"]),
+  metadataProbeCommand: z.string().default("ffprobe"),
+  metadataProbeArgs: z.array(z.string()).default(["-v", "error", "-show_format", "-show_streams", "-show_programs", "-of", "json", "{file}"]),
   collectionsDir: z.string().default("./data/collections"),
   cacheDir: z.string().default("./data/cache"),
   logsDir: z.string().default("./data/logs"),
@@ -47,6 +49,7 @@ export class SettingsStore {
     }
     if (!settings.smootherArgs.some((arg) => arg.includes("{file}"))) warnings.push("smootherArgs should include {file}");
     if (!settings.smootherArgs.some((arg) => arg.includes("{target}"))) warnings.push("smootherArgs should include {target}");
+    if (!settings.metadataProbeArgs.some((arg) => arg.includes("{file}"))) warnings.push("metadataProbeArgs should include {file}");
     return warnings;
   }
 }

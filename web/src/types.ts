@@ -5,6 +5,8 @@ export interface Settings {
   libraryPaths: string[];
   smootherCommand: string;
   smootherArgs: string[];
+  metadataProbeCommand: string;
+  metadataProbeArgs: string[];
   collectionsDir: string;
   cacheDir: string;
   logsDir: string;
@@ -20,7 +22,51 @@ export interface LibraryFile {
   modifiedAt: string;
   extension: string;
   metadataStatus: string;
-  metadata: { bitrate?: number; duration?: number; packetSize?: number; notes?: string[] };
+  metadata: FileMetadata;
+}
+
+export interface FileMetadata {
+  duration?: number;
+  bitrate?: number;
+  packetSize?: number;
+  formatName?: string;
+  probeScore?: number;
+  programCount?: number;
+  programs?: ProgramMetadata[];
+  videoStreams?: StreamMetadata[];
+  audioStreams?: StreamMetadata[];
+  otherStreams?: StreamMetadata[];
+  codecs?: string[];
+  serviceNames?: string[];
+  errors?: string[];
+  notes?: string[];
+}
+
+export interface ProgramMetadata {
+  programId?: number;
+  programNumber?: number;
+  pmtPid?: number;
+  pcrPid?: number;
+  serviceName?: string;
+  serviceProvider?: string;
+  streamIndexes: number[];
+}
+
+export interface StreamMetadata {
+  index: number;
+  pid?: string;
+  type?: string;
+  codec?: string;
+  profile?: string;
+  language?: string;
+  width?: number;
+  height?: number;
+  frameRate?: string;
+  fieldOrder?: string;
+  channels?: number;
+  channelLayout?: string;
+  sampleRate?: number;
+  bitrate?: number;
 }
 
 export interface CollectionPlayout {

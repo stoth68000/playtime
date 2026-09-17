@@ -210,7 +210,7 @@ h2 {
 }
 
 .library-table .row {
-  grid-template-columns: minmax(420px, 1fr) 110px 190px 100px 70px;
+  grid-template-columns: minmax(300px, 1.4fr) 80px 105px 130px minmax(160px, 1fr) minmax(170px, 1fr) 80px 70px;
 }
 
 .row.head {
@@ -227,6 +227,16 @@ h2 {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.truncate small {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #798696;
+  font-size: 11px;
+  margin-top: 2px;
 }
 
 .mono {

@@ -31,6 +31,33 @@ function formatBytes(value: number): string {
   return `${size.toFixed(index ? 1 : 0)} ${units[index]}`;
 }
 
+function formatDuration(value?: number): string {
+  if (!value) return "-";
+  const total = Math.round(value);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatBitrate(value?: number): string {
+  if (!value) return "-";
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)} Mb/s`;
+  return `${Math.round(value / 1000)} kb/s`;
+}
+
+function videoSummary(file: LibraryFile): string {
+  const video = file.metadata.videoStreams?.[0];
+  if (!video) return "-";
+  const size = video.width && video.height ? `${video.width}x${video.height}` : "";
+  return [video.codec, size, video.frameRate, video.fieldOrder].filter(Boolean).join(" ");
+}
+
+function audioSummary(file: LibraryFile): string {
+  const audio = file.metadata.audioStreams ?? [];
+  if (!audio.length) return "-";
+  return audio.map((stream) => [stream.pid, stream.codec, stream.channelLayout ?? (stream.channels ? `${stream.channels}ch` : undefined), stream.language].filter(Boolean).join(" ")).join(" / ");
+}
+
 function uptime(startedAt?: string): string {
   if (!startedAt) return "-";
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
@@ -166,8 +193,19 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
     <section className="panel">
       <div className="toolbar"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search library" /><button onClick={() => void rescan()}><FolderSync size={16} />Rescan</button></div>
       <div className="table library-table">
-        <div className="row head"><span>File</span><span>Size</span><span>Modified</span><span>Status</span><span></span></div>
-        {files.map((file) => <div className="row" key={file.id}><span className="truncate">{file.path}</span><span>{formatBytes(file.size)}</span><span>{new Date(file.modifiedAt).toLocaleString()}</span><span>{file.metadataStatus}</span><span><button onClick={() => addFile(file)}>Add</button></span></div>)}
+        <div className="row head"><span>File</span><span>Duration</span><span>Bitrate</span><span>Service</span><span>Video</span><span>Audio</span><span>TS</span><span></span></div>
+        {files.map((file) => (
+          <div className="row" key={file.id}>
+            <span className="truncate"><strong>{file.filename}</strong><small>{file.path}</small></span>
+            <span>{formatDuration(file.metadata.duration)}</span>
+            <span>{formatBitrate(file.metadata.bitrate)}</span>
+            <span className="truncate">{file.metadata.serviceNames?.join(", ") || "-"}</span>
+            <span className="truncate">{videoSummary(file)}</span>
+            <span className="truncate">{audioSummary(file)}</span>
+            <span>{file.metadata.packetSize ? `${file.metadata.packetSize} B` : file.metadataStatus}</span>
+            <span><button onClick={() => addFile(file)}>Add</button></span>
+          </div>
+        ))}
         {!files.length && <div className="empty">No MPEG-TS files indexed. Check settings, then rescan.</div>}
       </div>
     </section>
@@ -220,12 +258,15 @@ function ActivityPage({ activity }: { activity: ActivityEvent[] }) {
 function SettingsPage({ settings, setSettings, save }: { settings: Settings; setSettings: (s: Settings) => void; save: (s: Settings) => Promise<unknown> }) {
   const [paths, setPaths] = useState(settings.libraryPaths.join("\n"));
   const [args, setArgs] = useState(settings.smootherArgs.join("\n"));
-  const next = { ...settings, libraryPaths: paths.split(/\n/).filter(Boolean), smootherArgs: args.split(/\n/).filter(Boolean) };
+  const [probeArgs, setProbeArgs] = useState(settings.metadataProbeArgs.join("\n"));
+  const next = { ...settings, libraryPaths: paths.split(/\n/).filter(Boolean), smootherArgs: args.split(/\n/).filter(Boolean), metadataProbeArgs: probeArgs.split(/\n/).filter(Boolean) };
   return (
     <section className="panel settings-grid">
       <label>Library paths<textarea value={paths} onChange={(e) => setPaths(e.target.value)} /></label>
       <label>Smoother command<input value={settings.smootherCommand} onChange={(e) => setSettings({ ...settings, smootherCommand: e.target.value })} /></label>
       <label>Smoother args<textarea value={args} onChange={(e) => setArgs(e.target.value)} /></label>
+      <label>Metadata probe command<input value={settings.metadataProbeCommand} onChange={(e) => setSettings({ ...settings, metadataProbeCommand: e.target.value })} /></label>
+      <label>Metadata probe args<textarea value={probeArgs} onChange={(e) => setProbeArgs(e.target.value)} /></label>
       <label>Collections dir<input value={settings.collectionsDir} onChange={(e) => setSettings({ ...settings, collectionsDir: e.target.value })} /></label>
       <label>Cache dir<input value={settings.cacheDir} onChange={(e) => setSettings({ ...settings, cacheDir: e.target.value })} /></label>
       <label>Logs dir<input value={settings.logsDir} onChange={(e) => setSettings({ ...settings, logsDir: e.target.value })} /></label>

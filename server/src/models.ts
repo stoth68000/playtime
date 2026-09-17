@@ -5,6 +5,8 @@ export interface Settings {
   libraryPaths: string[];
   smootherCommand: string;
   smootherArgs: string[];
+  metadataProbeCommand: string;
+  metadataProbeArgs: string[];
   collectionsDir: string;
   cacheDir: string;
   logsDir: string;
@@ -19,13 +21,52 @@ export interface LibraryFile {
   size: number;
   modifiedAt: string;
   extension: string;
-  metadataStatus: "pending" | "basic" | "failed";
-  metadata: {
-    bitrate?: number;
-    duration?: number;
-    packetSize?: number;
-    notes?: string[];
-  };
+  metadataStatus: "pending" | "basic" | "probed" | "failed";
+  metadata: FileMetadata;
+}
+
+export interface FileMetadata {
+  duration?: number;
+  bitrate?: number;
+  packetSize?: number;
+  formatName?: string;
+  probeScore?: number;
+  programCount?: number;
+  programs?: ProgramMetadata[];
+  videoStreams?: StreamMetadata[];
+  audioStreams?: StreamMetadata[];
+  otherStreams?: StreamMetadata[];
+  codecs?: string[];
+  serviceNames?: string[];
+  errors?: string[];
+  notes?: string[];
+}
+
+export interface ProgramMetadata {
+  programId?: number;
+  programNumber?: number;
+  pmtPid?: number;
+  pcrPid?: number;
+  serviceName?: string;
+  serviceProvider?: string;
+  streamIndexes: number[];
+}
+
+export interface StreamMetadata {
+  index: number;
+  pid?: string;
+  type?: string;
+  codec?: string;
+  profile?: string;
+  language?: string;
+  width?: number;
+  height?: number;
+  frameRate?: string;
+  fieldOrder?: string;
+  channels?: number;
+  channelLayout?: string;
+  sampleRate?: number;
+  bitrate?: number;
 }
 
 export interface CollectionPlayout {
