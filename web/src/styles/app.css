@@ -259,6 +259,11 @@ h2 {
   flex: 0 0 42px;
 }
 
+.thumbnail-cell.entry {
+  width: 68px;
+  height: 44px;
+}
+
 .thumbnail-placeholder {
   display: grid;
   place-items: center;
@@ -423,9 +428,15 @@ h2 {
 
 .entry-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(230px, 1fr) minmax(240px, 1fr) auto auto auto;
+  grid-template-columns: 76px minmax(220px, 1fr) minmax(230px, 1fr) minmax(240px, 1fr) auto auto auto;
   gap: 8px;
   align-items: center;
+}
+
+.entry-thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .source-button {

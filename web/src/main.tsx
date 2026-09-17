@@ -396,9 +396,9 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
   );
 }
 
-function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: "default" | "small" }) {
+function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: "default" | "small" | "entry" }) {
   return (
-    <span className={clsx("thumbnail-cell", { small: size === "small" })}>
+    <span className={clsx("thumbnail-cell", { small: size === "small", entry: size === "entry" })}>
       {file?.metadata.thumbnailPath ? <img src={`/api/library/files/${encodeURIComponent(file.id)}/thumbnail`} alt="" /> : <span className="thumbnail-placeholder"><Library size={size === "small" ? 14 : 18} /></span>}
     </span>
   );
@@ -484,8 +484,10 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
                 <button title="Remove" onClick={() => setActive({ ...active, playouts: active.playouts.filter((p) => p.id !== entry.id) })}><Trash2 size={15} /></button>
               </div>
               <div className="entry-grid">
+                <div className="entry-thumbnail">
+                  <FileThumbnail file={selectedFile} size="entry" />
+                </div>
                 <button className="source-button" onClick={() => setPickerEntryId(entry.id)}>
-                  <FileThumbnail file={selectedFile} size="small" />
                   <span>{fileLabel(entry, files)}</span>
                 </button>
                 {!entry.fileId && <input value={entry.filePath ?? ""} onChange={(e) => updateEntry(entry.id, { filePath: e.target.value })} placeholder="/path/to/file.ts" />}
