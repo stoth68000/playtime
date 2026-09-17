@@ -356,18 +356,19 @@ function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain,
         <div className="row head playout-row"><span>Preview</span><span>State</span><span>Details</span><span>PID</span><span>Uptime</span><span>Last Log</span><span>Controls</span></div>
         {visible.map((p) => {
           const file = files.find((item) => item.path === p.filePath);
+          const lastLog = p.failureReason ?? p.recentLogs.at(-1) ?? "-";
           return (
           <div className={clsx("row", "playout-row", "inspect-row", { selected: selectedId === p.id })} key={p.id} role="button" tabIndex={0} onClick={() => setSelectedId(p.id)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedId(p.id); }}>
             <FileThumbnail file={file} size="dashboard" />
             <span><i className={clsx("lamp", p.state)} />{p.state}</span>
             <span className="playout-details">
-              <strong className="truncate">{p.label}</strong>
-              <small className="truncate">{p.filePath}</small>
-              <small className="mono truncate">{p.target}</small>
+              <strong className="truncate" title={p.label}>{p.label}</strong>
+              <small className="truncate" title={p.filePath}>{p.filePath}</small>
+              <small className="mono truncate" title={p.target}>{p.target}</small>
             </span>
             <span>{p.pid ?? "-"}</span>
             <span>{uptime(p.startedAt)}</span>
-            <span className="truncate log-snippet">{p.failureReason ?? p.recentLogs.at(-1) ?? "-"}</span>
+            <span className="truncate log-snippet" title={lastLog}>{lastLog}</span>
             <span className="actions">
               <button title="Restart" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onRestart(p.id); }}><RotateCw size={15} /></button>
               <button title="Stop" disabled={!["starting", "running", "restarting"].includes(p.state)} onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onStop(p.id); }}><Square size={15} /></button>
@@ -434,17 +435,21 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
       <div className="toolbar"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search library" /><button onClick={() => void rescan()}><FolderSync size={16} />Rescan</button></div>
       <div className="table library-table">
         <div className="row head"><span>Preview</span><span>File</span><span>Duration</span><span>Bitrate</span><span>Video</span><span>Audio</span><span></span></div>
-        {files.map((file) => (
+        {files.map((file) => {
+          const video = videoSummary(file);
+          const audio = audioSummary(file);
+          return (
           <div className="row" key={file.id}>
             <FileThumbnail file={file} />
-            <span className="truncate"><strong>{file.filename}</strong><small>{file.path}</small></span>
+            <span className="truncate" title={`${file.filename}\n${file.path}`}><strong>{file.filename}</strong><small>{file.path}</small></span>
             <span>{formatDuration(file.metadata.duration)}</span>
             <span>{formatBitrate(file.metadata.bitrate)}</span>
-            <span className="truncate media-summary-cell">{videoSummary(file)}</span>
-            <span className="truncate media-summary-cell">{audioSummary(file)}</span>
+            <span className="truncate media-summary-cell" title={video}>{video}</span>
+            <span className="truncate media-summary-cell" title={audio}>{audio}</span>
             <span><button onClick={() => addFile(file)}>Add</button></span>
           </div>
-        ))}
+          );
+        })}
         {!files.length && <div className="empty">No MPEG-TS files indexed. Check settings, then rescan.</div>}
       </div>
     </section>
@@ -542,7 +547,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
                 <div className="entry-thumbnail">
                   <FileThumbnail file={selectedFile} size="entry" />
                 </div>
-                <button className="source-button" onClick={() => setPickerEntryId(entry.id)}>
+                <button className="source-button" title={fileLabel(entry, files)} onClick={() => setPickerEntryId(entry.id)}>
                   <span>{fileLabel(entry, files)}</span>
                 </button>
                 {!entry.fileId && <input value={entry.filePath ?? ""} onChange={(e) => updateEntry(entry.id, { filePath: e.target.value })} placeholder="/path/to/file.ts" />}
@@ -575,16 +580,20 @@ function FilePicker({ files, query, setQuery, choose, close }: { files: LibraryF
         <div className="searchline"><Search size={16} /><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search filename, path, codec, service" /></div>
         <div className="table picker-table">
           <div className="row head"><span>File</span><span>Duration</span><span>Bitrate</span><span>Programs</span><span>Video</span><span>Audio</span></div>
-          {files.map((file) => (
+          {files.map((file) => {
+            const video = videoSummary(file);
+            const audio = audioSummary(file);
+            return (
             <button className="row picker-row" key={file.id} onClick={() => choose(file)}>
-              <span className="truncate"><strong>{file.filename}</strong><small>{file.path}</small></span>
+              <span className="truncate" title={`${file.filename}\n${file.path}`}><strong>{file.filename}</strong><small>{file.path}</small></span>
               <span>{formatDuration(file.metadata.duration)}</span>
               <span>{formatBitrate(file.metadata.bitrate)}</span>
               <span>{file.metadata.programCount ?? "-"}</span>
-              <span className="truncate">{videoSummary(file)}</span>
-              <span className="truncate">{audioSummary(file)}</span>
+              <span className="truncate" title={video}>{video}</span>
+              <span className="truncate" title={audio}>{audio}</span>
             </button>
-          ))}
+            );
+          })}
           {!files.length && <div className="empty">No matching files.</div>}
         </div>
       </div>
