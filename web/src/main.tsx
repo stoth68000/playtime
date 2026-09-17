@@ -270,7 +270,7 @@ function App() {
         </header>
         {error && <div className="alert danger">{error}</div>}
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
-        {page === "dashboard" && <Dashboard playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: true, autoRestart: false, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
+        {page === "dashboard" && <Dashboard files={files} playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: true, autoRestart: false, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
         {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "activity" && <ActivityPage activity={activity} />}
@@ -280,7 +280,7 @@ function App() {
   );
 }
 
-function Dashboard({ playouts, onStop, onRestart, onDelete, onStartAgain, onClearCompleted }: { playouts: PlayoutInstance[]; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown>; onDelete: (id: string) => Promise<unknown>; onStartAgain: (playout: PlayoutInstance) => Promise<unknown>; onClearCompleted: () => Promise<unknown> }) {
+function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain, onClearCompleted }: { files: LibraryFile[]; playouts: PlayoutInstance[]; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown>; onDelete: (id: string) => Promise<unknown>; onStartAgain: (playout: PlayoutInstance) => Promise<unknown>; onClearCompleted: () => Promise<unknown> }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "failed" | "complete">("all");
   const selected = playouts.find((playout) => playout.id === selectedId) ?? null;
@@ -302,9 +302,12 @@ function Dashboard({ playouts, onStop, onRestart, onDelete, onStartAgain, onClea
         </div>
       </div>
       <div className="table">
-        <div className="row head playout-row"><span>State</span><span>Label</span><span>Source</span><span>Target</span><span>PID</span><span>Uptime</span><span>Last Log</span><span>Controls</span></div>
-        {visible.map((p) => (
+        <div className="row head playout-row"><span>Preview</span><span>State</span><span>Label</span><span>Source</span><span>Target</span><span>PID</span><span>Uptime</span><span>Last Log</span><span>Controls</span></div>
+        {visible.map((p) => {
+          const file = files.find((item) => item.path === p.filePath);
+          return (
           <div className={clsx("row", "playout-row", "inspect-row", { selected: selectedId === p.id })} key={p.id} role="button" tabIndex={0} onClick={() => setSelectedId(p.id)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedId(p.id); }}>
+            <FileThumbnail file={file} size="small" />
             <span><i className={clsx("lamp", p.state)} />{p.state}</span>
             <span>{p.label}</span>
             <span className="truncate">{p.filePath}</span>
@@ -318,7 +321,8 @@ function Dashboard({ playouts, onStop, onRestart, onDelete, onStartAgain, onClea
               {p.state === "failed" && <button title="Delete failed record" className="danger-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onDelete(p.id); }}><Trash2 size={15} /></button>}
             </span>
           </div>
-        ))}
+          );
+        })}
         {!visible.length && <div className="empty">No playouts match this view.</div>}
       </div>
     </section>
