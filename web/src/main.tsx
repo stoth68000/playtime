@@ -176,6 +176,7 @@ function App() {
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const refresh = async () => {
     const [health, nextSettings, nextFiles, nextCollections, nextPlayouts, nextActivity] = await Promise.all([
@@ -219,6 +220,7 @@ function App() {
   }, [files, query]);
 
   const saveCollection = async () => {
+    setNotice("");
     const saved = await api.saveCollection(activeCollection);
     setActiveCollection(saved);
     await refresh();
@@ -226,9 +228,13 @@ function App() {
 
   const startCollection = async (collection: Collection) => {
     setError("");
+    setNotice("");
     try {
-      await api.startCollection(collection);
+      const started = await api.startCollection(collection);
       await refresh();
+      const count = started.length;
+      const jobText = count === 1 ? "playout" : "playouts";
+      setNotice(`Collection "${collection.name}" started with ${count} ${jobText}.`);
     } catch (err) {
       setError(`Start failed: ${(err as Error).message}`);
       throw err;
@@ -237,6 +243,7 @@ function App() {
 
   const stopCollection = async (collection: Collection) => {
     setError("");
+    setNotice("");
     try {
       await api.stopCollection(collection);
       await refresh();
@@ -248,6 +255,7 @@ function App() {
 
   const stopPlayout = async (id: string) => {
     setError("");
+    setNotice("");
     const previousPlayouts = playouts;
     setPlayouts((current) => current.map((playout) => (
       playout.id === id ? { ...playout, state: "stopping" } : playout
@@ -264,6 +272,7 @@ function App() {
 
   const restartPlayout = async (id: string) => {
     setError("");
+    setNotice("");
     const previousPlayouts = playouts;
     setPlayouts((current) => current.map((playout) => (
       playout.id === id ? { ...playout, state: "restarting" } : playout
@@ -280,6 +289,7 @@ function App() {
 
   const deleteCollection = async (name: string) => {
     setError("");
+    setNotice("");
     const previousCollections = collections;
     const previousActive = activeCollection;
     const optimisticCollections = collections.filter((collection) => collection.name !== name);
@@ -303,6 +313,7 @@ function App() {
 
   const deletePlayout = async (id: string) => {
     setError("");
+    setNotice("");
     const previousPlayouts = playouts;
     setPlayouts((current) => current.filter((playout) => playout.id !== id));
     try {
@@ -348,6 +359,7 @@ function App() {
           <button className="primary" onClick={() => void refresh()}><RotateCw size={16} />Refresh</button>
         </header>
         {error && <div className="alert danger">{error}</div>}
+        {notice && <div className="alert success">{notice}</div>}
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
         {page === "dashboard" && <Dashboard files={files} playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: playout.loop, autoRestart: playout.autoRestart, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
@@ -623,6 +635,15 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
     if (!window.confirm(`Delete collection "${savedVersion.name}" and delete ${activeJobCount} ${jobText}?`)) return;
     await removeCollection(savedVersion.name);
   };
+  const startActiveCollection = async () => {
+    const activeJobCount = playouts.filter((playout) => playout.collectionName === active.name && ["starting", "running", "restarting", "stopping"].includes(playout.state)).length;
+    if (activeJobCount) {
+      const jobText = activeJobCount === 1 ? "running playout" : "running playouts";
+      if (!window.confirm(`Collection "${active.name}" already has ${activeJobCount} ${jobText}. Stop the existing collection and start again?`)) return;
+      await stopCollection(active);
+    }
+    await startCollection(active);
+  };
   const openProbe = async (file: LibraryFile) => {
     setProbeFile(file);
     setProbeOutput("");
@@ -645,7 +666,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
           <input value={active.name} onChange={(e) => setActive({ ...active, name: e.target.value })} />
           <span className={clsx("badge", dirty ? "warn" : "ok")}>{dirty ? "Unsaved" : "Saved"}</span>
           <button className="primary" disabled={collectionIssues.length > 0} onClick={() => void save()}><Save size={16} />Save</button>
-          <button disabled={!validToStart} onClick={() => void startCollection(active)}><Play size={16} />Start</button>
+          <button disabled={!validToStart} onClick={() => void startActiveCollection()}><Play size={16} />Start</button>
           <button onClick={() => void stopCollection(active)}><Square size={16} />Stop</button>
           <button className="danger-button" disabled={!savedVersion} onClick={() => void deleteCollection()}><Trash2 size={16} /></button>
         </div>

@@ -172,7 +172,10 @@ export class PlayoutSupervisor {
       if (instance.entryId && entryIds.has(instance.entryId)) return true;
       return sourcesAndTargets.has(`${instance.filePath}\0${instance.target}`);
     });
-    await Promise.all(matching.map((instance) => this.stop(instance.id)));
+    await Promise.all(matching.map(async (instance) => {
+      await this.stop(instance.id);
+      await this.running.get(instance.id)?.exitPromise;
+    }));
     return matching.length;
   }
 
