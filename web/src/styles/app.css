@@ -262,7 +262,7 @@ h2 {
 .thumbnail-cell.entry {
   width: 102px;
   height: 66px;
-  border: 1px solid #6f7782;
+  border: 0;
   border-radius: 6px;
   background: transparent;
 }
