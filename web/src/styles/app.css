@@ -75,18 +75,18 @@ textarea {
 }
 
 .brand {
-  height: 42px;
+  height: 62px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: #f5f8fb;
-  font-size: 20px;
+  font-size: 27px;
   font-weight: 750;
 }
 
 .brand img {
-  width: 28px;
-  height: 28px;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
 }
 
