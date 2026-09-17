@@ -17,6 +17,18 @@ const events = new EventBus();
 const library = new LibraryScanner(settings, events);
 const collections = new CollectionStore(settings, events);
 const playouts = new PlayoutSupervisor(settings, events, (id) => library.get(id));
+let shuttingDown = false;
+
+async function shutdown(signal?: NodeJS.Signals): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  if (signal) app.log.info({ signal }, "Shutting down PlayTime");
+  await app.close();
+}
+
+app.addHook("onClose", async () => {
+  await playouts.shutdown();
+});
 
 await library.loadCache();
 void library.scan();
@@ -47,3 +59,16 @@ const warnings = settingsStore.validateRuntime(settings);
 for (const warning of warnings) app.log.warn(warning);
 
 await app.listen({ port: settings.serverPort, host: "127.0.0.1" });
+
+process.once("SIGINT", (signal) => {
+  void shutdown(signal).then(() => process.exit(0), (error) => {
+    app.log.error(error);
+    process.exit(1);
+  });
+});
+process.once("SIGTERM", (signal) => {
+  void shutdown(signal).then(() => process.exit(0), (error) => {
+    app.log.error(error);
+    process.exit(1);
+  });
+});

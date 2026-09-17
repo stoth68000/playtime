@@ -118,6 +118,18 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 
 {
   const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const first = await supervisor.start(entry({ target: "udp://239.1.1.1:5001" }));
+  const second = await supervisor.start(entry({ target: "udp://239.1.1.1:5002" }));
+  await supervisor.shutdown();
+  await waitForState(first, "exited");
+  await waitForState(second, "exited");
+  assert.equal(first.signal, "SIGTERM");
+  assert.equal(second.signal, "SIGTERM");
+  supervisor.clearCompleted();
+}
+
+{
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
   const collectionEntry = entry();
   const collection: Collection = {
     name: "Current Collection",

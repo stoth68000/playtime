@@ -16,6 +16,7 @@ interface RunningProcess {
 }
 
 const stopGraceMs = 2500;
+const shutdownGraceMs = 3000;
 
 export class PlayoutSupervisor {
   private running = new Map<string, RunningProcess>();
@@ -151,6 +152,27 @@ export class PlayoutSupervisor {
     });
     await Promise.all(matching.map((instance) => this.stop(instance.id)));
     return matching.length;
+  }
+
+  async shutdown(): Promise<void> {
+    const running = [...this.running.values()];
+    if (!running.length) return;
+    for (const item of running) {
+      item.instance.state = "stopping";
+      this.events.emit("playout.stopping", `Stopping ${item.instance.label}`, { id: item.instance.id, shutdown: true });
+      item.child.kill("SIGTERM");
+    }
+    await Promise.race([
+      Promise.all(running.map((item) => item.exitPromise)),
+      new Promise<void>((resolve) => setTimeout(resolve, shutdownGraceMs))
+    ]);
+    const stubborn = [...this.running.values()];
+    for (const item of stubborn) {
+      item.instance.recentLogs = [...item.instance.recentLogs, `[system] Server shutdown forced SIGKILL`].slice(-80);
+      this.events.emit("playout.force_stopping", `Force stopping ${item.instance.label}`, { id: item.instance.id, shutdown: true });
+      item.child.kill("SIGKILL");
+    }
+    await Promise.all(stubborn.map((item) => item.exitPromise));
   }
 
   renderCommand(file: string, target: string): string[] {
