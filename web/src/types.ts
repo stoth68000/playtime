@@ -99,8 +99,11 @@ export interface PlayoutInstance {
   startedAt?: string;
   stoppedAt?: string;
   exitCode?: number | null;
+  signal?: string | null;
   restartCount: number;
   command: string[];
+  logPath?: string;
+  failureReason?: string;
   recentLogs: string[];
 }
 

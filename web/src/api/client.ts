@@ -22,6 +22,7 @@ export const api = {
   startPlayout: (playout: CollectionPlayout) => request<PlayoutInstance>("/api/playouts", { method: "POST", body: JSON.stringify(playout) }),
   stopPlayout: (id: string) => request<PlayoutInstance>(`/api/playouts/${id}/stop`, { method: "POST" }),
   restartPlayout: (id: string) => request<PlayoutInstance>(`/api/playouts/${id}/restart`, { method: "POST" }),
+  clearCompletedPlayouts: () => request<{ cleared: number }>("/api/playouts/clear-completed", { method: "POST" }),
   startCollection: (name: string) => request<PlayoutInstance[]>(`/api/collections/${encodeURIComponent(name)}/start`, { method: "POST" }),
   stopCollection: (name: string) => request<{ stopped: number }>(`/api/collections/${encodeURIComponent(name)}/stop`, { method: "POST" }),
   activity: () => request<ActivityEvent[]>("/api/activity")

@@ -195,6 +195,21 @@ h2 {
   max-width: 460px;
 }
 
+.toolbar.compact {
+  margin: 0;
+}
+
+.toolbar.compact button {
+  min-height: 28px;
+  padding: 0 9px;
+  text-transform: capitalize;
+}
+
+.toolbar.compact button.active {
+  background: #172232;
+  border-color: #3b526c;
+}
+
 .table {
   display: grid;
   gap: 1px;
@@ -216,6 +231,30 @@ h2 {
 
 .library-table .row {
   grid-template-columns: minmax(300px, 1.4fr) 80px 105px 130px minmax(160px, 1fr) minmax(170px, 1fr) 80px 70px;
+}
+
+.playout-row {
+  grid-template-columns: 110px 160px minmax(220px, 1fr) 220px 70px 90px minmax(180px, 0.8fr) 90px;
+}
+
+.inspect-row {
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inspect-row:hover, .inspect-row.selected {
+  background: #121a24;
+}
+
+.inspect-row.selected {
+  box-shadow: inset 3px 0 0 #38bdf8;
+}
+
+.log-snippet {
+  color: #9aa7b6;
+  font-size: 12px;
 }
 
 .row.head {
@@ -471,6 +510,122 @@ label input[type="checkbox"] {
   border-radius: 8px;
   padding: 14px;
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 18;
+  width: min(620px, 48vw);
+  height: 100vh;
+  overflow: auto;
+  background: #0d131a;
+  border-left: 1px solid #344255;
+  padding: 16px;
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.35);
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.drawer-head p {
+  margin-top: 6px;
+  color: #aeb9c6;
+}
+
+.drawer-head button {
+  width: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.detail {
+  border: 1px solid #26313d;
+  background: #0a0f15;
+  border-radius: 6px;
+  padding: 9px 10px;
+  min-width: 0;
+}
+
+.detail.wide {
+  grid-column: 1 / -1;
+}
+
+.detail span {
+  display: block;
+  color: #7f8d9d;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.detail strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #e5edf6;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.drawer-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.command-box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  border: 1px solid #26313d;
+  background: #090d12;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.command-box code {
+  color: #dbeafe;
+  overflow-wrap: anywhere;
+}
+
+.log-box {
+  border: 1px solid #26313d;
+  background: #080c11;
+  border-radius: 6px;
+  padding: 8px;
+  min-height: 220px;
+  max-height: 42vh;
+  overflow: auto;
+}
+
+.log-line {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  color: #b9c5d3;
+  padding: 4px 5px;
+  border-bottom: 1px solid #111923;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.log-line.err {
+  color: #ffb9b9;
+  background: #1f1115;
 }
 
 .modal-head, .searchline {

@@ -31,6 +31,18 @@ export class PlayoutSupervisor {
     return this.instances.get(id);
   }
 
+  clearCompleted(): number {
+    let cleared = 0;
+    for (const [id, instance] of this.instances.entries()) {
+      if (!this.running.has(id) && ["exited", "failed"].includes(instance.state)) {
+        this.instances.delete(id);
+        cleared += 1;
+      }
+    }
+    if (cleared) this.events.emit("playout.cleared", `Cleared ${cleared} completed playout(s)`, { cleared });
+    return cleared;
+  }
+
   async start(entry: CollectionPlayout, collection?: Collection): Promise<PlayoutInstance> {
     const filePath = entry.filePath ?? (entry.fileId ? this.findFile(entry.fileId)?.path : undefined);
     if (!filePath) throw new Error("Unable to resolve playout source file");
@@ -114,7 +126,8 @@ export class PlayoutSupervisor {
   private async launch(instance: PlayoutInstance, autoRestart: boolean): Promise<void> {
     await ensureDir(path.join(resolveAppPath(this.settings.logsDir), "playouts"));
     const [command, ...args] = instance.command;
-    const log = createWriteStream(path.join(resolveAppPath(this.settings.logsDir), "playouts", `${instance.id}.log`), { flags: "a" });
+    instance.logPath = path.join(resolveAppPath(this.settings.logsDir), "playouts", `${instance.id}.log`);
+    const log = createWriteStream(instance.logPath, { flags: "a" });
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
     instance.pid = child.pid;
     instance.state = "running";
@@ -134,6 +147,7 @@ export class PlayoutSupervisor {
     child.stderr.on("data", (chunk) => capture("stderr", chunk));
     child.on("error", (error) => {
       instance.state = "failed";
+      instance.failureReason = error.message;
       instance.recentLogs = [...instance.recentLogs, `[error] ${error.message}`].slice(-80);
       this.events.emit("playout.failed", `${instance.label} failed to start`, { id: instance.id, error: error.message });
     });
@@ -144,6 +158,7 @@ export class PlayoutSupervisor {
       instance.signal = signal;
       instance.stoppedAt = new Date().toISOString();
       instance.state = code === 0 || instance.state === "stopping" ? "exited" : "failed";
+      instance.failureReason = instance.state === "failed" ? `Exited with code ${code ?? "unknown"}${signal ? ` (${signal})` : ""}` : undefined;
       this.events.emit("playout.exited", `${instance.label} exited`, { id: instance.id, code, signal });
       if (autoRestart && instance.state === "failed") {
         instance.restartCount += 1;

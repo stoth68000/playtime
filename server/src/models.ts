@@ -102,6 +102,8 @@ export interface PlayoutInstance {
   signal?: NodeJS.Signals | null;
   restartCount: number;
   command: string[];
+  logPath?: string;
+  failureReason?: string;
   recentLogs: string[];
 }
 

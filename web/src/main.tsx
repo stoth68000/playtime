@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Activity, ArrowDown, ArrowUp, Copy, Database, FolderSync, Library, ListPlus, Play, RadioTower, RotateCw, Save, Search, Settings as SettingsIcon, Square, Trash2, X } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, Clipboard, Copy, Database, FolderSync, Library, ListPlus, Play, RadioTower, RotateCw, Save, Search, Settings as SettingsIcon, Square, Terminal, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { api } from "./api/client";
 import type { ActivityEvent, Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings } from "./types";
@@ -175,7 +175,7 @@ function App() {
         </header>
         {error && <div className="alert danger">{error}</div>}
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
-        {page === "dashboard" && <Dashboard playouts={playouts} onStop={(id) => api.stopPlayout(id).then(refresh)} onRestart={(id) => api.restartPlayout(id).then(refresh)} />}
+        {page === "dashboard" && <Dashboard playouts={playouts} onStop={(id) => api.stopPlayout(id).then(refresh)} onRestart={(id) => api.restartPlayout(id).then(refresh)} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: true, autoRestart: false, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
         {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} save={saveCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "activity" && <ActivityPage activity={activity} />}
@@ -185,27 +185,94 @@ function App() {
   );
 }
 
-function Dashboard({ playouts, onStop, onRestart }: { playouts: PlayoutInstance[]; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown> }) {
+function Dashboard({ playouts, onStop, onRestart, onStartAgain, onClearCompleted }: { playouts: PlayoutInstance[]; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown>; onStartAgain: (playout: PlayoutInstance) => Promise<unknown>; onClearCompleted: () => Promise<unknown> }) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "active" | "failed" | "complete">("all");
+  const selected = playouts.find((playout) => playout.id === selectedId) ?? null;
+  const visible = playouts.filter((playout) => {
+    if (filter === "active") return ["starting", "running", "restarting", "stopping"].includes(playout.state);
+    if (filter === "failed") return playout.state === "failed";
+    if (filter === "complete") return playout.state === "exited";
+    return true;
+  });
+  const completedCount = playouts.filter((playout) => ["exited", "failed"].includes(playout.state)).length;
   return (
+    <>
     <section className="panel">
-      <div className="panel-title"><h2>On Air</h2><span>{playouts.length} instances</span></div>
+      <div className="panel-title">
+        <h2>On Air</h2>
+        <div className="toolbar compact">
+          {(["all", "active", "failed", "complete"] as const).map((item) => <button className={clsx({ active: filter === item })} key={item} onClick={() => setFilter(item)}>{item}</button>)}
+          <button disabled={!completedCount} onClick={() => void onClearCompleted()}>Clear Completed</button>
+        </div>
+      </div>
       <div className="table">
-        <div className="row head"><span>State</span><span>Label</span><span>Source</span><span>Target</span><span>PID</span><span>Uptime</span><span>Controls</span></div>
-        {playouts.map((p) => (
-          <div className="row" key={p.id}>
+        <div className="row head playout-row"><span>State</span><span>Label</span><span>Source</span><span>Target</span><span>PID</span><span>Uptime</span><span>Last Log</span><span>Controls</span></div>
+        {visible.map((p) => (
+          <div className={clsx("row", "playout-row", "inspect-row", { selected: selectedId === p.id })} key={p.id} role="button" tabIndex={0} onClick={() => setSelectedId(p.id)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedId(p.id); }}>
             <span><i className={clsx("lamp", p.state)} />{p.state}</span>
             <span>{p.label}</span>
             <span className="truncate">{p.filePath}</span>
             <span className="mono">{p.target}</span>
             <span>{p.pid ?? "-"}</span>
             <span>{uptime(p.startedAt)}</span>
-            <span className="actions"><button title="Restart" onClick={() => void onRestart(p.id)}><RotateCw size={15} /></button><button title="Stop" onClick={() => void onStop(p.id)}><Square size={15} /></button></span>
+            <span className="truncate log-snippet">{p.failureReason ?? p.recentLogs.at(-1) ?? "-"}</span>
+            <span className="actions">
+              <button title="Restart" onClick={(event) => { event.stopPropagation(); void onRestart(p.id); }}><RotateCw size={15} /></button>
+              <button title="Stop" disabled={!["starting", "running", "restarting"].includes(p.state)} onClick={(event) => { event.stopPropagation(); void onStop(p.id); }}><Square size={15} /></button>
+            </span>
           </div>
         ))}
-        {!playouts.length && <div className="empty">No active or recent playouts.</div>}
+        {!visible.length && <div className="empty">No playouts match this view.</div>}
       </div>
     </section>
+    {selected && <PlayoutDrawer playout={selected} close={() => setSelectedId(null)} onStop={onStop} onRestart={onRestart} onStartAgain={onStartAgain} />}
+    </>
   );
+}
+
+function PlayoutDrawer({ playout, close, onStop, onRestart, onStartAgain }: { playout: PlayoutInstance; close: () => void; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown>; onStartAgain: (playout: PlayoutInstance) => Promise<unknown> }) {
+  const commandLine = playout.command.map((part) => (/\s/.test(part) ? JSON.stringify(part) : part)).join(" ");
+  const active = ["starting", "running", "restarting"].includes(playout.state);
+  const copyCommand = () => void navigator.clipboard?.writeText(commandLine);
+  return (
+    <aside className="drawer">
+      <div className="drawer-head">
+        <div>
+          <h2>{playout.label}</h2>
+          <p><i className={clsx("lamp", playout.state)} />{playout.state}</p>
+        </div>
+        <button title="Close" onClick={close}><X size={16} /></button>
+      </div>
+      {playout.failureReason && <div className="alert danger">{playout.failureReason}</div>}
+      <div className="detail-grid">
+        <Detail label="Collection" value={playout.collectionName ?? "-"} />
+        <Detail label="PID" value={playout.pid?.toString() ?? "-"} />
+        <Detail label="Started" value={playout.startedAt ? new Date(playout.startedAt).toLocaleString() : "-"} />
+        <Detail label="Stopped" value={playout.stoppedAt ? new Date(playout.stoppedAt).toLocaleString() : "-"} />
+        <Detail label="Exit" value={playout.exitCode !== undefined ? `${playout.exitCode ?? "signal"}${playout.signal ? ` ${playout.signal}` : ""}` : "-"} />
+        <Detail label="Restarts" value={playout.restartCount.toString()} />
+        <Detail label="Source" value={playout.filePath} wide />
+        <Detail label="Target" value={playout.target} wide />
+        <Detail label="Log file" value={playout.logPath ?? "-"} wide />
+      </div>
+      <div className="drawer-actions">
+        <button disabled={!active} onClick={() => void onStop(playout.id)}><Square size={15} />Stop</button>
+        <button onClick={() => void onRestart(playout.id)}><RotateCw size={15} />Restart</button>
+        <button onClick={() => void onStartAgain(playout)}><Play size={15} />Start Again</button>
+        <button onClick={copyCommand}><Clipboard size={15} />Copy Command</button>
+      </div>
+      <div className="command-box"><Terminal size={16} /><code>{commandLine}</code></div>
+      <div className="log-box">
+        {playout.recentLogs.map((line, index) => <div className={clsx("log-line", { err: line.includes("[stderr]") || line.includes("[error]") })} key={`${line}-${index}`}>{line}</div>)}
+        {!playout.recentLogs.length && <div className="empty">No log lines captured yet.</div>}
+      </div>
+    </aside>
+  );
+}
+
+function Detail({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
+  return <div className={clsx("detail", { wide })}><span>{label}</span><strong>{value}</strong></div>;
 }
 
 function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: LibraryFile[]; query: string; setQuery: (q: string) => void; rescan: () => Promise<unknown>; addFile: (file: LibraryFile) => void }) {

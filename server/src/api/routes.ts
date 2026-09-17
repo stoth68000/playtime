@@ -54,6 +54,7 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
 
   app.get("/api/playouts", async () => services.playouts.list());
   app.post<{ Body: CollectionPlayout }>("/api/playouts", async (request) => services.playouts.start(request.body));
+  app.post("/api/playouts/clear-completed", async () => ({ cleared: services.playouts.clearCompleted() }));
   app.get<{ Params: { id: string } }>("/api/playouts/:id", async (request, reply) => {
     const playout = services.playouts.get(request.params.id);
     if (!playout) return reply.code(404).send({ error: "Playout not found" });
