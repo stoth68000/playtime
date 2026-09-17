@@ -146,6 +146,17 @@ function App() {
     await refresh();
   };
 
+  const startCollection = async (collection: Collection) => {
+    setError("");
+    try {
+      await api.startCollectionSnapshot(collection);
+      await refresh();
+    } catch (err) {
+      setError(`Start failed: ${(err as Error).message}`);
+      throw err;
+    }
+  };
+
   const deleteCollection = async (name: string) => {
     setError("");
     const previousCollections = collections;
@@ -204,7 +215,7 @@ function App() {
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
         {page === "dashboard" && <Dashboard playouts={playouts} onStop={(id) => api.stopPlayout(id).then(refresh)} onRestart={(id) => api.restartPlayout(id).then(refresh)} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: true, autoRestart: false, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
-        {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} save={saveCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
+        {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} save={saveCollection} startCollection={startCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "activity" && <ActivityPage activity={activity} />}
         {page === "settings" && settings && <SettingsPage settings={settings} setSettings={setSettings} save={(value) => api.saveSettings(value).then((saved) => { setSettings(saved); return refresh(); })} />}
       </main>
@@ -326,8 +337,8 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
   );
 }
 
-function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; save: () => Promise<void>; deleteCollection: (name: string) => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
-  const { collections, active, setActive, files, save, deleteCollection: removeCollection, updateEntry, refresh } = props;
+function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; save: () => Promise<void>; startCollection: (collection: Collection) => Promise<void>; deleteCollection: (name: string) => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
+  const { collections, active, setActive, files, save, startCollection, deleteCollection: removeCollection, updateEntry, refresh } = props;
   const [pickerEntryId, setPickerEntryId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
   const savedVersion = collections.find((collection) => collection.name === active.name);
@@ -380,7 +391,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
           <input value={active.name} onChange={(e) => setActive({ ...active, name: e.target.value })} />
           <span className={clsx("badge", dirty ? "warn" : "ok")}>{dirty ? "Unsaved" : "Saved"}</span>
           <button className="primary" disabled={collectionIssues.length > 0} onClick={() => void save()}><Save size={16} />Save</button>
-          <button disabled={!validToStart || dirty} onClick={() => void api.startCollection(active.name).then(refresh)}><Play size={16} />Start</button>
+          <button disabled={!validToStart} onClick={() => void startCollection(active)}><Play size={16} />Start</button>
           <button onClick={() => void api.stopCollection(active.name).then(refresh)}><Square size={16} />Stop</button>
           <button className="danger-button" disabled={!savedVersion} onClick={() => void deleteCollection()}><Trash2 size={16} /></button>
         </div>

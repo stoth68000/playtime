@@ -20,6 +20,7 @@ export const api = {
   deleteCollection: (name: string) => request<{ ok: boolean }>(`/api/collections/${encodeURIComponent(name)}`, { method: "DELETE" }),
   playouts: () => request<PlayoutInstance[]>("/api/playouts"),
   startPlayout: (playout: CollectionPlayout) => request<PlayoutInstance>("/api/playouts", { method: "POST", body: JSON.stringify(playout) }),
+  startCollectionSnapshot: (collection: Collection) => request<PlayoutInstance[]>("/api/playouts/collection", { method: "POST", body: JSON.stringify(collection) }),
   stopPlayout: (id: string) => request<PlayoutInstance>(`/api/playouts/${id}/stop`, { method: "POST" }),
   restartPlayout: (id: string) => request<PlayoutInstance>(`/api/playouts/${id}/restart`, { method: "POST" }),
   clearCompletedPlayouts: () => request<{ cleared: number }>("/api/playouts/clear-completed", { method: "POST" }),
