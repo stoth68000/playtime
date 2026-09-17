@@ -328,7 +328,7 @@ function App() {
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
         {page === "dashboard" && <Dashboard files={files} playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: playout.loop, autoRestart: playout.autoRestart, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
-        {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
+        {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} playouts={playouts} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "activity" && <ActivityPage activity={activity} />}
         {page === "settings" && settings && <SettingsPage settings={settings} setSettings={setSettings} save={(value) => api.saveSettings(value).then((saved) => { setSettings(saved); return refresh(); })} />}
       </main>
@@ -552,8 +552,8 @@ function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: 
   );
 }
 
-function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; save: () => Promise<void>; startCollection: (collection: Collection) => Promise<void>; stopCollection: (collection: Collection) => Promise<void>; deleteCollection: (name: string) => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
-  const { collections, active, setActive, files, save, startCollection, stopCollection, deleteCollection: removeCollection, updateEntry, refresh } = props;
+function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; playouts: PlayoutInstance[]; save: () => Promise<void>; startCollection: (collection: Collection) => Promise<void>; stopCollection: (collection: Collection) => Promise<void>; deleteCollection: (name: string) => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
+  const { collections, active, setActive, files, playouts, save, startCollection, stopCollection, deleteCollection: removeCollection, updateEntry, refresh } = props;
   const [pickerEntryId, setPickerEntryId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
   const [probeFile, setProbeFile] = useState<LibraryFile | null>(null);
@@ -595,7 +595,9 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   };
   const deleteCollection = async () => {
     if (!savedVersion) return;
-    if (!window.confirm(`Delete collection "${savedVersion.name}" and terminate all of its playout jobs?`)) return;
+    const activeJobCount = playouts.filter((playout) => playout.collectionName === savedVersion.name && ["starting", "running", "restarting", "stopping"].includes(playout.state)).length;
+    const jobText = activeJobCount === 1 ? "active job" : "active jobs";
+    if (!window.confirm(`Delete collection "${savedVersion.name}" and delete ${activeJobCount} ${jobText}?`)) return;
     await removeCollection(savedVersion.name);
   };
   const openProbe = async (file: LibraryFile) => {
