@@ -206,6 +206,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
   await waitFor(() => restarted.restartCount > 0, "auto restart");
   await waitForState(restarted, "running");
   assert.equal(restarted.autoRestart, true);
+  assert.equal(restarted.loop, true);
   await supervisor.stop(restarted.id);
   await waitForState(restarted, "exited");
 }
@@ -213,11 +214,19 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 {
   const marker = path.join(root, "clean-restart-marker");
   const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [cleanRestartScript, marker, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
-  const restarted = await supervisor.start(entry({ autoRestart: true }));
-  await waitFor(() => restarted.restartCount > 0, "clean auto restart");
+  const restarted = await supervisor.start(entry({ autoRestart: false, loop: true }));
+  await waitFor(() => restarted.restartCount > 0, "clean loop restart");
   await waitForState(restarted, "running");
   await supervisor.stop(restarted.id);
   await waitForState(restarted, "exited");
+}
+
+{
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [failScript, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const failed = await supervisor.start(entry({ autoRestart: false, loop: true }));
+  await waitForState(failed, "failed");
+  assert.equal(failed.restartCount, 0);
+  supervisor.clearCompleted();
 }
 
 {

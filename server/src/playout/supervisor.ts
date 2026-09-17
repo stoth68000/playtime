@@ -76,6 +76,7 @@ export class PlayoutSupervisor {
       filePath,
       target: entry.target,
       state: "starting",
+      loop: entry.loop,
       autoRestart: entry.autoRestart,
       startedAt: new Date().toISOString(),
       restartCount: 0,
@@ -243,7 +244,9 @@ export class PlayoutSupervisor {
     child.on("exit", (code, signal) => {
       const running = this.running.get(instance.id);
       if (running?.forceStopTimer) clearTimeout(running.forceStopTimer);
-      const shouldRestart = instance.autoRestart && instance.state !== "stopping";
+      const operatorStopped = instance.state === "stopping";
+      const cleanExit = code === 0;
+      const shouldRestart = !operatorStopped && ((cleanExit && instance.loop) || (!cleanExit && instance.autoRestart));
       this.running.delete(instance.id);
       closeLog();
       instance.exitCode = code;
