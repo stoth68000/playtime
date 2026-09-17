@@ -595,7 +595,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   };
   const deleteCollection = async () => {
     if (!savedVersion) return;
-    if (!window.confirm(`Delete collection "${savedVersion.name}"?`)) return;
+    if (!window.confirm(`Delete collection "${savedVersion.name}" and terminate all of its playout jobs?`)) return;
     await removeCollection(savedVersion.name);
   };
   const openProbe = async (file: LibraryFile) => {
