@@ -57,7 +57,7 @@ export class LibraryScanner {
   async mediaInfoOutput(id: string): Promise<string | undefined> {
     const file = this.files.get(id);
     if (!file) return undefined;
-    return mediaInfoOutput(file.path);
+    return mediaInfoOutput(file.path, this.settings);
   }
 
   async scan(): Promise<LibraryFile[]> {

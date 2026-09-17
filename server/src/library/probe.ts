@@ -69,8 +69,9 @@ export async function ffprobeOutput(filePath: string, settings: Settings): Promi
   return stdout;
 }
 
-export async function mediaInfoOutput(filePath: string): Promise<string> {
-  const { stdout } = await execFileAsync("mediainfo", [filePath], { maxBuffer: 8 * 1024 * 1024, timeout: 30_000 });
+export async function mediaInfoOutput(filePath: string, settings: Settings): Promise<string> {
+  const command = settings.mediaInfoCommand.includes("/") ? resolveAppPath(settings.mediaInfoCommand) : settings.mediaInfoCommand;
+  const { stdout } = await execFileAsync(command, [filePath], { maxBuffer: 8 * 1024 * 1024, timeout: 30_000 });
   return stdout;
 }
 

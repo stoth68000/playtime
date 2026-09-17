@@ -34,11 +34,12 @@ For the bundled `tstools_bitrate_smoother` binary, use the real playout template
 
 ## Metadata
 
-PlayTime probes MPEG-TS files with `ffprobe` by default:
+PlayTime probes MPEG-TS files with the bundled static `ffprobe` by default:
 
 ```json
-"metadataProbeCommand": "ffprobe",
-"metadataProbeArgs": ["-v", "error", "-show_format", "-show_streams", "-show_programs", "-of", "json", "{file}"]
+"metadataProbeCommand": "./bin/ffprobe",
+"metadataProbeArgs": ["-v", "error", "-show_format", "-show_streams", "-show_programs", "-of", "json", "{file}"],
+"mediaInfoCommand": "./bin/mediainfo"
 ```
 
 Library rescans cache duration, bitrate, packet size, program/service data, codecs, video streams, audio streams, and probe errors in `data/cache/library-index.json`.

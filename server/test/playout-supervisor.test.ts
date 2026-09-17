@@ -80,6 +80,7 @@ const baseSettings: Settings = {
   smootherArgs: [okScript, "-i", "{file}", "-o", "{target}"],
   metadataProbeCommand: "ffprobe",
   metadataProbeArgs: ["{file}"],
+  mediaInfoCommand: "mediainfo",
   collectionsDir: path.join(root, "collections"),
   cacheDir: path.join(root, "cache"),
   logsDir: path.join(root, "logs"),

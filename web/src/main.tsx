@@ -736,6 +736,7 @@ function SettingsPage({ settings, setSettings, save }: { settings: Settings; set
       <label>Smoother args<textarea value={args} onChange={(e) => setArgs(e.target.value)} /></label>
       <label>Metadata probe command<input value={settings.metadataProbeCommand} onChange={(e) => setSettings({ ...settings, metadataProbeCommand: e.target.value })} /></label>
       <label>Metadata probe args<textarea value={probeArgs} onChange={(e) => setProbeArgs(e.target.value)} /></label>
+      <label>MediaInfo command<input value={settings.mediaInfoCommand} onChange={(e) => setSettings({ ...settings, mediaInfoCommand: e.target.value })} /></label>
       <label>Collections dir<input value={settings.collectionsDir} onChange={(e) => setSettings({ ...settings, collectionsDir: e.target.value })} /></label>
       <label>Cache dir<input value={settings.cacheDir} onChange={(e) => setSettings({ ...settings, cacheDir: e.target.value })} /></label>
       <label>Logs dir<input value={settings.logsDir} onChange={(e) => setSettings({ ...settings, logsDir: e.target.value })} /></label>
