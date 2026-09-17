@@ -12,6 +12,7 @@ import { ffprobeOutput, mediaInfoOutput, probeTransportStream } from "./probe.js
 
 const extensions = new Set([".ts", ".mts", ".m2ts", ".mpegts"]);
 const execFileAsync = promisify(execFile);
+const thumbnailWidth = 320;
 
 export class LibraryScanner {
   private files = new Map<string, LibraryFile>();
@@ -91,7 +92,7 @@ export class LibraryScanner {
         const stat = await fs.stat(fullPath);
         const id = crypto.createHash("sha1").update(fullPath).digest("hex").slice(0, 16);
         const cached = this.files.get(id);
-        const cachedHasThumbnail = !cached?.metadata.videoStreams?.length || Boolean(cached.metadata.thumbnailPath && existsSync(resolveAppPath(cached.metadata.thumbnailPath)));
+        const cachedHasThumbnail = !cached?.metadata.videoStreams?.length || this.hasCurrentThumbnail(id, cached);
         const cachedHasTransportType = Boolean(cached?.metadata.transportType);
         const unchanged = cached?.size === stat.size && cached.modifiedAt === stat.mtime.toISOString() && cached.metadataStatus === "probed" && cachedHasThumbnail && cachedHasTransportType;
         output.push({
@@ -129,7 +130,7 @@ export class LibraryScanner {
 
   private async generateThumbnail(id: string, filePath: string, metadata: LibraryFile["metadata"]): Promise<void> {
     if (!metadata.videoStreams?.length) return;
-    const thumbnailPath = path.join(resolveAppPath(this.settings.cacheDir), "thumbnails", `${id}-320w.jpg`);
+    const thumbnailPath = this.thumbnailCachePath(id);
     await ensureDir(path.dirname(thumbnailPath));
     try {
       await execFileAsync(this.ffmpegCommand(), [
@@ -138,13 +139,23 @@ export class LibraryScanner {
         "-i", filePath,
         "-map", "0:v:0",
         "-frames:v", "1",
-        "-vf", "scale=320:-1",
+        "-vf", `scale=${thumbnailWidth}:-1`,
         thumbnailPath
       ], { timeout: 30_000, maxBuffer: 1024 * 1024 });
       metadata.thumbnailPath = thumbnailPath;
     } catch (error) {
       metadata.notes = [...(metadata.notes ?? []), `Thumbnail generation failed: ${(error as Error).message}`];
     }
+  }
+
+  private thumbnailCachePath(id: string): string {
+    return path.join(resolveAppPath(this.settings.cacheDir), "thumbnails", `${id}-${thumbnailWidth}w.jpg`);
+  }
+
+  private hasCurrentThumbnail(id: string, cached?: LibraryFile): boolean {
+    if (!cached?.metadata.thumbnailPath) return false;
+    const expectedPath = this.thumbnailCachePath(id);
+    return resolveAppPath(cached.metadata.thumbnailPath) === expectedPath && existsSync(expectedPath);
   }
 
   private ffmpegCommand(): string {
