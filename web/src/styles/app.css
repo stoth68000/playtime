@@ -360,17 +360,20 @@ h2 {
   font-size: 12px;
 }
 
-.library-table .media-summary-cell {
+.library-table .media-summary-cell,
+.picker-table .media-summary-cell {
   font-size: 12px;
 }
 
-.library-table .video-summary-cell {
+.library-table .video-summary-cell,
+.picker-table .video-summary-cell {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-.library-table .video-summary-cell small {
+.library-table .video-summary-cell small,
+.picker-table .video-summary-cell small {
   color: #8a97a8;
   font-size: 11px;
 }
@@ -905,14 +908,14 @@ label input[type="checkbox"] {
 }
 
 .picker-table .row {
-  grid-template-columns: 58px minmax(300px, 1.4fr) 80px 105px 80px minmax(160px, 1fr) minmax(190px, 1fr);
-  align-items: center;
+  grid-template-columns: 78px minmax(442px, 1.95fr) 80px 105px minmax(170px, 0.85fr) minmax(180px, 0.85fr);
+  align-items: start;
 }
 
 .picker-row {
   width: 100%;
   border: 0;
   border-radius: 0;
-  min-height: 50px;
+  min-height: 66px;
   text-align: left;
 }
