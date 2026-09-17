@@ -508,12 +508,14 @@ function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; o
           <button title="Close" onClick={close}><X size={16} /></button>
         </div>
         <div className="probe-title"><strong>{file.filename}</strong><span>{file.path}</span></div>
-        <div className="tabs">
+        <div className="probe-tabs" role="tablist" aria-label="Media analysis output">
           <button className={clsx({ active: tab === "ffprobe" })} onClick={() => setTab("ffprobe")}>ffprobe</button>
           <button className={clsx({ active: tab === "mediainfo" })} onClick={() => void loadMediaInfo()}>MediaInfo</button>
         </div>
-        {activeError && <div className="alert danger">{activeError}</div>}
-        <pre className="probe-output">{activeOutput || (!activeError ? "Loading..." : "")}</pre>
+        <div className="probe-body">
+          {activeError && <div className="alert danger">{activeError}</div>}
+          <pre className="probe-output">{activeOutput || (!activeError ? "Loading..." : "")}</pre>
+        </div>
       </div>
     </div>
   );

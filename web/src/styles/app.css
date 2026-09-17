@@ -618,6 +618,9 @@ label input[type="checkbox"] {
 
 .probe-modal {
   width: min(1280px, 96vw);
+  height: min(820px, 86vh);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 10px;
 }
 
 .probe-title {
@@ -635,20 +638,31 @@ label input[type="checkbox"] {
   font-size: 12px;
 }
 
-.tabs {
+.probe-tabs {
   display: flex;
   gap: 6px;
+  align-items: center;
+  border-bottom: 1px solid #26313d;
 }
 
-.tabs button {
+.probe-tabs button {
   min-height: 30px;
   padding: 0 12px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
-.tabs button.active {
+.probe-tabs button.active {
   background: #172232;
   border-color: #3b526c;
   color: #f8fbff;
+}
+
+.probe-body {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
 }
 
 .probe-output {
