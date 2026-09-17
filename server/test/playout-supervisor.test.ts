@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { PlayoutSupervisor } from "../src/playout/supervisor.js";
 import { EventBus } from "../src/events/eventBus.js";
-import type { CollectionPlayout, PlayoutInstance, Settings } from "../src/models.js";
+import type { Collection, CollectionPlayout, PlayoutInstance, Settings } from "../src/models.js";
 
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "playtime-supervisor-"));
 const okScript = path.join(root, "ok.mjs");
@@ -114,6 +114,23 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
   assert.equal(started.exitCode, 0);
   assert.equal(supervisor.clearCompleted(), 1);
   assert.equal(supervisor.list().length, 0);
+}
+
+{
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const collectionEntry = entry();
+  const collection: Collection = {
+    name: "Current Collection",
+    description: "",
+    playouts: [collectionEntry],
+    updatedAt: new Date().toISOString()
+  };
+  const [started] = await supervisor.startCollection(collection);
+  assert.equal(started.state, "running");
+  const stopped = await supervisor.stopCollection({ ...collection, name: "Current Collection Edited" });
+  assert.equal(stopped, 1);
+  await waitForState(started, "exited");
+  supervisor.clearCompleted();
 }
 
 {

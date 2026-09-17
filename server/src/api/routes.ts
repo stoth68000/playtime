@@ -55,6 +55,7 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
   app.get("/api/playouts", async () => services.playouts.list());
   app.post<{ Body: CollectionPlayout }>("/api/playouts", async (request) => services.playouts.start(request.body));
   app.post<{ Body: Collection }>("/api/playouts/collection", async (request) => services.playouts.startCollection(request.body));
+  app.post<{ Body: Collection }>("/api/playouts/collection/stop", async (request) => ({ stopped: await services.playouts.stopCollection(request.body) }));
   app.post("/api/playouts/clear-completed", async () => ({ cleared: services.playouts.clearCompleted() }));
   app.get<{ Params: { id: string } }>("/api/playouts/:id", async (request, reply) => {
     const playout = services.playouts.get(request.params.id);
@@ -63,15 +64,6 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
   });
   app.post<{ Params: { id: string } }>("/api/playouts/:id/stop", async (request) => services.playouts.stop(request.params.id));
   app.post<{ Params: { id: string } }>("/api/playouts/:id/restart", async (request) => services.playouts.restart(request.params.id));
-  app.post<{ Params: { name: string } }>("/api/collections/:name/start", async (request, reply) => {
-    const collection = await services.collections.get(request.params.name);
-    if (!collection) return reply.code(404).send({ error: "Collection not found" });
-    return services.playouts.startCollection(collection);
-  });
-  app.post<{ Params: { name: string } }>("/api/collections/:name/stop", async (request) => {
-    const stopped = await services.playouts.stopCollection(request.params.name);
-    return { stopped };
-  });
 
   app.get("/api/activity", async () => services.events.listActivity());
   app.get("/api/events", async (request, reply) => {

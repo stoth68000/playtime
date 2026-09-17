@@ -20,11 +20,10 @@ export const api = {
   deleteCollection: (name: string) => request<{ ok: boolean }>(`/api/collections/${encodeURIComponent(name)}`, { method: "DELETE" }),
   playouts: () => request<PlayoutInstance[]>("/api/playouts"),
   startPlayout: (playout: CollectionPlayout) => request<PlayoutInstance>("/api/playouts", { method: "POST", body: JSON.stringify(playout) }),
-  startCollectionSnapshot: (collection: Collection) => request<PlayoutInstance[]>("/api/playouts/collection", { method: "POST", body: JSON.stringify(collection) }),
+  startCollection: (collection: Collection) => request<PlayoutInstance[]>("/api/playouts/collection", { method: "POST", body: JSON.stringify(collection) }),
+  stopCollection: (collection: Collection) => request<{ stopped: number }>("/api/playouts/collection/stop", { method: "POST", body: JSON.stringify(collection) }),
   stopPlayout: (id: string) => request<PlayoutInstance>(`/api/playouts/${id}/stop`, { method: "POST" }),
   restartPlayout: (id: string) => request<PlayoutInstance>(`/api/playouts/${id}/restart`, { method: "POST" }),
   clearCompletedPlayouts: () => request<{ cleared: number }>("/api/playouts/clear-completed", { method: "POST" }),
-  startCollection: (name: string) => request<PlayoutInstance[]>(`/api/collections/${encodeURIComponent(name)}/start`, { method: "POST" }),
-  stopCollection: (name: string) => request<{ stopped: number }>(`/api/collections/${encodeURIComponent(name)}/stop`, { method: "POST" }),
   activity: () => request<ActivityEvent[]>("/api/activity")
 };

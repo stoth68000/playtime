@@ -123,8 +123,19 @@ export class PlayoutSupervisor {
     return next;
   }
 
-  async stopCollection(name: string): Promise<number> {
-    const matching = this.list().filter((instance) => instance.collectionName === name && ["starting", "running", "restarting", "stopping"].includes(instance.state));
+  async stopCollection(collection: Collection): Promise<number> {
+    const activeStates: PlayoutInstance["state"][] = ["starting", "running", "restarting", "stopping"];
+    const entryIds = new Set(collection.playouts.map((entry) => entry.id));
+    const sourcesAndTargets = new Set(collection.playouts.map((entry) => {
+      const filePath = entry.filePath ?? (entry.fileId ? this.findFile(entry.fileId)?.path : undefined);
+      return filePath ? `${filePath}\0${entry.target}` : "";
+    }).filter(Boolean));
+    const matching = this.list().filter((instance) => {
+      if (!activeStates.includes(instance.state)) return false;
+      if (instance.collectionName === collection.name) return true;
+      if (instance.entryId && entryIds.has(instance.entryId)) return true;
+      return sourcesAndTargets.has(`${instance.filePath}\0${instance.target}`);
+    });
     await Promise.all(matching.map((instance) => this.stop(instance.id)));
     return matching.length;
   }
