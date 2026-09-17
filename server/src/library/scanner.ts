@@ -129,7 +129,7 @@ export class LibraryScanner {
 
   private async generateThumbnail(id: string, filePath: string, metadata: LibraryFile["metadata"]): Promise<void> {
     if (!metadata.videoStreams?.length) return;
-    const thumbnailPath = path.join(resolveAppPath(this.settings.cacheDir), "thumbnails", `${id}.jpg`);
+    const thumbnailPath = path.join(resolveAppPath(this.settings.cacheDir), "thumbnails", `${id}-320w.jpg`);
     await ensureDir(path.dirname(thumbnailPath));
     try {
       await execFileAsync(this.ffmpegCommand(), [
@@ -138,7 +138,7 @@ export class LibraryScanner {
         "-i", filePath,
         "-map", "0:v:0",
         "-frames:v", "1",
-        "-vf", "scale=160:-1",
+        "-vf", "scale=320:-1",
         thumbnailPath
       ], { timeout: 30_000, maxBuffer: 1024 * 1024 });
       metadata.thumbnailPath = thumbnailPath;
