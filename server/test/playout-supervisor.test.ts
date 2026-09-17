@@ -1,0 +1,139 @@
+import assert from "node:assert/strict";
+import { promises as fs } from "node:fs";
+import { randomUUID } from "node:crypto";
+import os from "node:os";
+import path from "node:path";
+import { PlayoutSupervisor } from "../src/playout/supervisor.js";
+import { EventBus } from "../src/events/eventBus.js";
+import type { CollectionPlayout, PlayoutInstance, Settings } from "../src/models.js";
+
+const root = await fs.mkdtemp(path.join(os.tmpdir(), "playtime-supervisor-"));
+const okScript = path.join(root, "ok.mjs");
+const failScript = path.join(root, "fail.mjs");
+const flakyScript = path.join(root, "flaky.mjs");
+const source = path.join(root, "source.ts");
+await fs.writeFile(source, "sample");
+await fs.writeFile(okScript, `
+const args = process.argv.slice(2);
+const input = args[args.indexOf("-i") + 1];
+const output = args[args.indexOf("-o") + 1];
+console.log("started " + input + " " + output);
+let count = 0;
+const timer = setInterval(() => {
+  count += 1;
+  console.log("tick " + count);
+}, 100);
+process.on("SIGTERM", () => {
+  clearInterval(timer);
+  console.error("stopped");
+  process.exit(0);
+});
+`);
+await fs.writeFile(failScript, `
+console.error("intentional failure");
+process.exit(7);
+`);
+await fs.writeFile(flakyScript, `
+import { existsSync, writeFileSync } from "node:fs";
+const marker = process.argv[2];
+if (!existsSync(marker)) {
+  writeFileSync(marker, "failed");
+  console.error("first launch failed");
+  process.exit(9);
+}
+console.log("restart succeeded");
+const timer = setInterval(() => console.log("running"), 100);
+process.on("SIGTERM", () => {
+  clearInterval(timer);
+  process.exit(0);
+});
+`);
+
+const baseSettings: Settings = {
+  serverPort: 0,
+  libraryPaths: [root],
+  smootherCommand: process.execPath,
+  smootherArgs: [okScript, "-i", "{file}", "-o", "{target}"],
+  metadataProbeCommand: "ffprobe",
+  metadataProbeArgs: ["{file}"],
+  collectionsDir: path.join(root, "collections"),
+  cacheDir: path.join(root, "cache"),
+  logsDir: path.join(root, "logs"),
+  defaultLoop: true,
+  defaultAutoRestart: false
+};
+
+const entry = (patch: Partial<CollectionPlayout> = {}): CollectionPlayout => ({
+  id: randomUUID(),
+  label: "test",
+  filePath: source,
+  target: "udp://239.1.1.1:5000",
+  loop: true,
+  autoRestart: false,
+  enabled: true,
+  ...patch
+});
+
+async function waitFor(predicate: () => boolean, label: string): Promise<void> {
+  const deadline = Date.now() + 2500;
+  while (Date.now() < deadline) {
+    if (predicate()) return;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  assert.fail(`Timed out waiting for ${label}`);
+}
+
+async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["state"]): Promise<void> {
+  await waitFor(() => instance.state === state, `state ${state}`);
+}
+
+{
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const command = supervisor.renderCommand(source, "udp://239.1.1.1:5000");
+  assert.deepEqual(command, [process.execPath, okScript, "-i", source, "-o", "udp://239.1.1.1:5000"]);
+  assert.throws(() => supervisor.validateCommand([process.execPath, okScript, "-i", source], source, "udp://239.1.1.1:5000"), /target URL/);
+}
+
+{
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const started = await supervisor.start(entry());
+  assert.equal(started.state, "running");
+  assert.ok(started.pid);
+  assert.ok(started.logPath?.endsWith(".log"));
+  await waitFor(() => started.recentLogs.some((line) => line.includes("tick")), "log capture");
+  await supervisor.stop(started.id);
+  await waitForState(started, "exited");
+  assert.equal(started.exitCode, 0);
+  assert.equal(supervisor.clearCompleted(), 1);
+  assert.equal(supervisor.list().length, 0);
+}
+
+{
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const first = await supervisor.start(entry());
+  const second = await supervisor.restart(first.id);
+  assert.equal(second.restartCount, 1);
+  await supervisor.stop(second.id);
+  await waitForState(second, "exited");
+  supervisor.clearCompleted();
+}
+
+{
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [failScript, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const failed = await supervisor.start(entry());
+  await waitForState(failed, "failed");
+  assert.match(failed.failureReason ?? "", /Exited with code 7/);
+  assert.ok(failed.recentLogs.some((line) => line.includes("intentional failure")));
+}
+
+{
+  const marker = path.join(root, "flaky-marker");
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [flakyScript, marker, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const restarted = await supervisor.start(entry({ autoRestart: true }));
+  await waitFor(() => restarted.restartCount > 0, "auto restart");
+  await waitForState(restarted, "running");
+  await supervisor.stop(restarted.id);
+  await waitForState(restarted, "exited");
+}
+
+console.log("playout supervisor integration tests passed");

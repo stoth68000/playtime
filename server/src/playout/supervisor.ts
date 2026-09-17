@@ -50,6 +50,7 @@ export class PlayoutSupervisor {
 
     const id = nanoid();
     const command = this.renderCommand(filePath, entry.target);
+    this.validateCommand(command, filePath, entry.target);
     const instance: PlayoutInstance = {
       id,
       collectionName: collection?.name,
@@ -116,11 +117,19 @@ export class PlayoutSupervisor {
     return matching.length;
   }
 
-  private renderCommand(file: string, target: string): string[] {
+  renderCommand(file: string, target: string): string[] {
     return [
       resolveAppPath(this.settings.smootherCommand),
       ...this.settings.smootherArgs.map((arg) => arg.replaceAll("{file}", file).replaceAll("{target}", target))
     ];
+  }
+
+  validateCommand(command: string[], file: string, target: string): void {
+    if (!command[0]) throw new Error("Smoother command is empty");
+    if (!command.includes(file)) throw new Error("Rendered smoother command does not include the source file");
+    if (!command.includes(target)) throw new Error("Rendered smoother command does not include the target URL");
+    const unresolved = command.find((part) => part.includes("{file}") || part.includes("{target}"));
+    if (unresolved) throw new Error(`Rendered smoother command has unresolved template token: ${unresolved}`);
   }
 
   private async launch(instance: PlayoutInstance, autoRestart: boolean): Promise<void> {
@@ -129,6 +138,13 @@ export class PlayoutSupervisor {
     instance.logPath = path.join(resolveAppPath(this.settings.logsDir), "playouts", `${instance.id}.log`);
     const log = createWriteStream(instance.logPath, { flags: "a" });
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    let logClosed = false;
+    const closeLog = () => {
+      if (!logClosed) {
+        logClosed = true;
+        log.end();
+      }
+    };
     instance.pid = child.pid;
     instance.state = "running";
     this.running.set(instance.id, { child, log, instance });
@@ -146,14 +162,17 @@ export class PlayoutSupervisor {
     child.stdout.on("data", (chunk) => capture("stdout", chunk));
     child.stderr.on("data", (chunk) => capture("stderr", chunk));
     child.on("error", (error) => {
+      this.running.delete(instance.id);
       instance.state = "failed";
       instance.failureReason = error.message;
+      instance.stoppedAt = new Date().toISOString();
       instance.recentLogs = [...instance.recentLogs, `[error] ${error.message}`].slice(-80);
+      closeLog();
       this.events.emit("playout.failed", `${instance.label} failed to start`, { id: instance.id, error: error.message });
     });
     child.on("exit", (code, signal) => {
       this.running.delete(instance.id);
-      log.end();
+      closeLog();
       instance.exitCode = code;
       instance.signal = signal;
       instance.stoppedAt = new Date().toISOString();

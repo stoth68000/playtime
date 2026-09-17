@@ -3,12 +3,14 @@
   "libraryPaths": [
     "./samples"
   ],
-  "smootherCommand": "./scripts/fake_smoother.mjs",
+  "smootherCommand": "./bin/tstools_bitrate_smoother",
   "smootherArgs": [
-    "--input",
+    "-i",
     "{file}",
-    "--output",
-    "{target}"
+    "-o",
+    "{target}",
+    "-l",
+    "500"
   ],
   "metadataProbeCommand": "ffprobe",
   "metadataProbeArgs": [

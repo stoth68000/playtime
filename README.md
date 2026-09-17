@@ -23,6 +23,13 @@ http://127.0.0.1:4500
 
 Edit `data/settings.json` to point `libraryPaths` at your MPEG-TS library and adjust `smootherArgs` to match your `tstools_bitrate_smoother` command-line contract.
 
+For the bundled `tstools_bitrate_smoother` binary, use the real playout template in `data/settings.real-smoother.example.json`:
+
+```json
+"smootherCommand": "./bin/tstools_bitrate_smoother",
+"smootherArgs": ["-i", "{file}", "-o", "{target}", "-l", "500"]
+```
+
 ## Metadata
 
 PlayTime probes MPEG-TS files with `ffprobe` by default:

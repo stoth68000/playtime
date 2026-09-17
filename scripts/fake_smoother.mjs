@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
 const args = process.argv.slice(2);
-const input = args[args.findIndex((arg) => arg === "--input") + 1] ?? "unknown";
-const output = args[args.findIndex((arg) => arg === "--output") + 1] ?? "unknown";
+const valueAfter = (...names) => {
+  const index = args.findIndex((arg) => names.includes(arg));
+  return index >= 0 ? args[index + 1] : undefined;
+};
+const input = valueAfter("--input", "-i") ?? "unknown";
+const output = valueAfter("--output", "-o") ?? "unknown";
 
 console.log(`fake smoother starting input=${input} output=${output}`);
 
