@@ -1,9 +1,10 @@
 import type { Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings, ActivityEvent } from "../types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const headers = init?.body ? { "Content-Type": "application/json", ...(init.headers ?? {}) } : init?.headers;
   const response = await fetch(url, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) }
+    headers
   });
   if (!response.ok) throw new Error((await response.text()) || response.statusText);
   return response.json() as Promise<T>;
