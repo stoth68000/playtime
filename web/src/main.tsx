@@ -362,6 +362,7 @@ function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain,
         {visible.map((p) => {
           const file = files.find((item) => item.path === p.filePath);
           const lastLog = p.failureReason ?? p.recentLogs.at(-1) ?? "-";
+          const completed = ["exited", "failed"].includes(p.state);
           return (
           <div className={clsx("row", "playout-row", "inspect-row", { selected: selectedId === p.id })} key={p.id} role="button" tabIndex={0} onClick={() => setSelectedId(p.id)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedId(p.id); }}>
             <FileThumbnail file={file} size="dashboard" />
@@ -377,7 +378,7 @@ function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain,
             <span className="actions">
               <button title="Restart" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onRestart(p.id); }}><RotateCw size={15} /></button>
               <button title="Stop" disabled={!["starting", "running", "restarting"].includes(p.state)} onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onStop(p.id); }}><Square size={15} /></button>
-              {p.state === "failed" && <button title="Delete failed record" className="danger-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onDelete(p.id); }}><Trash2 size={15} /></button>}
+              {completed && <button title="Delete completed record" className="danger-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onDelete(p.id); }}><Trash2 size={15} /></button>}
             </span>
           </div>
           );
