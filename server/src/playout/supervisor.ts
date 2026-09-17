@@ -60,6 +60,21 @@ export class PlayoutSupervisor {
     return instance;
   }
 
+  async deleteCollectionInstances(collectionName: string): Promise<number> {
+    const matching = this.list().filter((instance) => instance.collectionName === collectionName);
+    await Promise.all(matching.map(async (instance) => {
+      if (this.running.has(instance.id) || instance.state === "restarting") {
+        await this.stop(instance.id);
+        await this.running.get(instance.id)?.exitPromise;
+      }
+      this.clearRestartTimer(instance.id);
+      this.instances.delete(instance.id);
+      this.events.emit("playout.deleted", `Deleted ${instance.label}`, { id: instance.id, collectionName });
+    }));
+    if (matching.length) this.events.emit("playout.collection_deleted", `Deleted ${matching.length} playout(s) for ${collectionName}`, { collectionName, deleted: matching.length });
+    return matching.length;
+  }
+
   async start(entry: CollectionPlayout, collection?: Collection): Promise<PlayoutInstance> {
     const filePath = entry.filePath ?? (entry.fileId ? this.findFile(entry.fileId)?.path : undefined);
     if (!filePath) throw new Error("Unable to resolve playout source file");

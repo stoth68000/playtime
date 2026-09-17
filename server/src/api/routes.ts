@@ -64,6 +64,7 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
     return services.collections.save({ ...request.body, name: request.params.name });
   });
   app.delete<{ Params: { name: string } }>("/api/collections/:name", async (request) => {
+    await services.playouts.deleteCollectionInstances(request.params.name);
     await services.collections.delete(request.params.name);
     return { ok: true };
   });

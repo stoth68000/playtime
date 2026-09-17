@@ -164,6 +164,24 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 
 {
   const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const collectionEntry = entry();
+  const collection: Collection = {
+    name: "Delete Me",
+    description: "",
+    startupOnBoot: false,
+    playouts: [collectionEntry],
+    updatedAt: new Date().toISOString()
+  };
+  const [started] = await supervisor.startCollection(collection);
+  await waitForState(started, "running");
+  const deleted = await supervisor.deleteCollectionInstances(collection.name);
+  assert.equal(deleted, 1);
+  assert.equal(supervisor.list().length, 0);
+  assert.equal(started.state, "exited");
+}
+
+{
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
   const first = await supervisor.start(entry());
   const restarted = await supervisor.restart(first.id);
   assert.equal(restarted.id, first.id);
