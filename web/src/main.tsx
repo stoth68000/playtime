@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Activity, ArrowDown, ArrowUp, Clipboard, Copy, Database, Eye, FolderSync, Library, ListPlus, Play, RadioTower, RotateCw, Save, Search, Settings as SettingsIcon, Square, Terminal, Trash2, X } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, Clipboard, Copy, Database, Eye, FolderSync, Library, ListPlus, Play, RotateCw, Save, Search, Settings as SettingsIcon, Square, Terminal, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { api } from "./api/client";
 import type { ActivityEvent, Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings } from "./types";
+import appIcon from "./app-icon.png";
 import "./styles/app.css";
 
 type Page = "dashboard" | "library" | "collections" | "activity" | "settings";
@@ -302,7 +303,7 @@ function App() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand"><RadioTower size={22} /> <span>PlayTime</span></div>
+        <div className="brand"><img src={appIcon} alt="" /> <span>PlayTime</span></div>
         <nav>
           <button className={clsx({ active: page === "dashboard" })} onClick={() => setPage("dashboard")}><Play size={16} />Dashboard</button>
           <button className={clsx({ active: page === "library" })} onClick={() => setPage("library")}><Library size={16} />Library</button>

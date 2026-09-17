@@ -84,6 +84,12 @@ textarea {
   font-weight: 750;
 }
 
+.brand img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 nav {
   display: grid;
   gap: 7px;
