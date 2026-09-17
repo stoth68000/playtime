@@ -562,6 +562,23 @@ label input[type="checkbox"] {
   color: #8c99a8;
 }
 
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.row-actions button {
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.row-actions button[title] {
+  width: 34px;
+  padding: 0;
+}
+
 .event strong {
   color: #dce7f5;
 }

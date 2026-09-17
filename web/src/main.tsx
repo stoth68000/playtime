@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Activity, ArrowDown, ArrowUp, Clipboard, Copy, Database, FolderSync, Library, ListPlus, Play, RadioTower, RotateCw, Save, Search, Settings as SettingsIcon, Square, Terminal, Trash2, X } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, Clipboard, Copy, Database, Eye, FolderSync, Library, ListPlus, Play, RadioTower, RotateCw, Save, Search, Settings as SettingsIcon, Square, Terminal, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { api } from "./api/client";
 import type { ActivityEvent, Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings } from "./types";
@@ -469,7 +469,10 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
               <small>{transportType}</small>
             </span>
             <span className="truncate media-summary-cell" title={audio}>{audio}</span>
-            <span><button onClick={(event) => { event.stopPropagation(); addFile(file); }}>Add</button></span>
+            <span className="row-actions">
+              <button title="Analyze media" onClick={(event) => { event.stopPropagation(); void openProbe(file); }}><Eye size={15} /></button>
+              <button onClick={(event) => { event.stopPropagation(); addFile(file); }}>Add</button>
+            </span>
           </div>
           );
         })}
