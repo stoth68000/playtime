@@ -536,6 +536,9 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   const { collections, active, setActive, files, save, startCollection, stopCollection, deleteCollection: removeCollection, updateEntry, refresh } = props;
   const [pickerEntryId, setPickerEntryId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
+  const [probeFile, setProbeFile] = useState<LibraryFile | null>(null);
+  const [probeOutput, setProbeOutput] = useState("");
+  const [probeError, setProbeError] = useState("");
   const savedVersion = collections.find((collection) => collection.name === active.name);
   const dirty = !savedVersion || collectionComparable(savedVersion) !== collectionComparable(active);
   const collectionIssues = active.playouts.flatMap((entry) => validateEntry(entry, files, active.playouts).map((issue) => `${entry.label || "Unnamed"}: ${issue}`));
@@ -575,6 +578,17 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
     if (!window.confirm(`Delete collection "${savedVersion.name}"?`)) return;
     await removeCollection(savedVersion.name);
   };
+  const openProbe = async (file: LibraryFile) => {
+    setProbeFile(file);
+    setProbeOutput("");
+    setProbeError("");
+    try {
+      const result = await api.probeOutput(file.id);
+      setProbeOutput(result.output);
+    } catch (err) {
+      setProbeError((err as Error).message);
+    }
+  };
   return (
     <div className="split">
       <section className="panel rail">
@@ -608,6 +622,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
                 <button title="Move up" disabled={index === 0} onClick={() => moveEntry(entry.id, -1)}><ArrowUp size={15} /></button>
                 <button title="Move down" disabled={index === active.playouts.length - 1} onClick={() => moveEntry(entry.id, 1)}><ArrowDown size={15} /></button>
                 <button title="Duplicate" onClick={() => duplicateEntry(entry)}><Copy size={15} /></button>
+                <button title="Analyze media" disabled={!selectedFile} onClick={() => selectedFile && void openProbe(selectedFile)}><Eye size={15} /></button>
                 <button title="Start entry" disabled={issues.length > 0 || dirty} onClick={() => void api.startPlayout(entry).then(refresh)}><Play size={15} /></button>
                 <button title="Remove" onClick={() => setActive({ ...active, playouts: active.playouts.filter((p) => p.id !== entry.id) })}><Trash2 size={15} /></button>
               </div>
@@ -615,14 +630,18 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
                 <div className="entry-thumbnail">
                   <FileThumbnail file={selectedFile} size="entry" />
                 </div>
-                <button className="source-button" title={fileLabel(entry, files)} onClick={() => setPickerEntryId(entry.id)}>
-                  <span>{fileLabel(entry, files)}</span>
-                </button>
-                {!entry.fileId && <input value={entry.filePath ?? ""} onChange={(e) => updateEntry(entry.id, { filePath: e.target.value })} placeholder="/path/to/file.ts" />}
-                <input value={entry.target} onChange={(e) => updateEntry(entry.id, { target: e.target.value })} placeholder="udp://ip:port or srt://host:port" />
-                <label><input type="checkbox" checked={entry.enabled} onChange={(e) => updateEntry(entry.id, { enabled: e.target.checked })} />Enabled</label>
-                <label><input type="checkbox" checked={entry.loop} onChange={(e) => updateEntry(entry.id, { loop: e.target.checked })} />Loop</label>
-                <label><input type="checkbox" checked={entry.autoRestart} onChange={(e) => updateEntry(entry.id, { autoRestart: e.target.checked })} />Auto restart</label>
+                <div className="entry-fields">
+                  <button className="source-button" title={fileLabel(entry, files)} onClick={() => setPickerEntryId(entry.id)}>
+                    <span>{fileLabel(entry, files)}</span>
+                  </button>
+                  {!entry.fileId && <input value={entry.filePath ?? ""} onChange={(e) => updateEntry(entry.id, { filePath: e.target.value })} placeholder="/path/to/file.ts" />}
+                  <input value={entry.target} onChange={(e) => updateEntry(entry.id, { target: e.target.value })} placeholder="udp://ip:port or srt://host:port" />
+                  <div className="entry-toggles">
+                    <label><input type="checkbox" checked={entry.enabled} onChange={(e) => updateEntry(entry.id, { enabled: e.target.checked })} />Enabled</label>
+                    <label><input type="checkbox" checked={entry.loop} onChange={(e) => updateEntry(entry.id, { loop: e.target.checked })} />Loop</label>
+                    <label><input type="checkbox" checked={entry.autoRestart} onChange={(e) => updateEntry(entry.id, { autoRestart: e.target.checked })} />Auto restart</label>
+                  </div>
+                </div>
               </div>
               {selectedFile && <div className="entry-meta"><span>{formatDuration(selectedFile.metadata.duration)}</span><span>{formatBitrate(selectedFile.metadata.bitrate)}</span><span>{videoSummary(selectedFile)}</span><span>{audioSummary(selectedFile)}</span></div>}
               {issues.length > 0 && <div className="entry-errors">{issues.map((issue) => <span key={issue}>{issue}</span>)}</div>}
@@ -633,6 +652,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
         </div>
       </section>
       {pickerEntryId && <FilePicker files={pickerFiles} query={pickerQuery} setQuery={setPickerQuery} choose={chooseFile} close={() => setPickerEntryId(null)} />}
+      {probeFile && <ProbeOutputModal file={probeFile} output={probeOutput} error={probeError} close={() => setProbeFile(null)} />}
     </div>
   );
 }
