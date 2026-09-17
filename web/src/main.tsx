@@ -307,7 +307,7 @@ function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain,
           const file = files.find((item) => item.path === p.filePath);
           return (
           <div className={clsx("row", "playout-row", "inspect-row", { selected: selectedId === p.id })} key={p.id} role="button" tabIndex={0} onClick={() => setSelectedId(p.id)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedId(p.id); }}>
-            <FileThumbnail file={file} size="small" />
+            <FileThumbnail file={file} size="dashboard" />
             <span><i className={clsx("lamp", p.state)} />{p.state}</span>
             <span>{p.label}</span>
             <span className="truncate">{p.filePath}</span>
@@ -400,9 +400,9 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
   );
 }
 
-function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: "default" | "small" | "entry" }) {
+function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: "default" | "small" | "entry" | "dashboard" }) {
   return (
-    <span className={clsx("thumbnail-cell", { small: size === "small", entry: size === "entry" })}>
+    <span className={clsx("thumbnail-cell", { small: size === "small", entry: size === "entry", dashboard: size === "dashboard" })}>
       {file?.metadata.thumbnailPath ? <img src={`/api/library/files/${encodeURIComponent(file.id)}/thumbnail`} alt="" /> : <span className="thumbnail-placeholder"><Library size={size === "small" ? 14 : 18} /></span>}
     </span>
   );

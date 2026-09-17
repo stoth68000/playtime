@@ -259,6 +259,12 @@ h2 {
   flex: 0 0 42px;
 }
 
+.thumbnail-cell.dashboard {
+  width: 67px;
+  height: 45px;
+  flex: 0 0 67px;
+}
+
 .thumbnail-cell.entry {
   width: 102px;
   height: 66px;
@@ -277,7 +283,7 @@ h2 {
 }
 
 .playout-row {
-  grid-template-columns: 64px 110px 160px minmax(220px, 1fr) 220px 70px 90px minmax(180px, 0.8fr) 90px;
+  grid-template-columns: 82px 110px 160px minmax(220px, 1fr) 220px 70px 90px minmax(180px, 0.8fr) 90px;
 }
 
 .inspect-row {
