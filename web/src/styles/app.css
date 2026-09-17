@@ -184,12 +184,6 @@ h2 {
   color: #ffc5c5;
 }
 
-.alert.success {
-  background: #102819;
-  border-color: #276b42;
-  color: #bdf4ce;
-}
-
 .panel {
   border: 1px solid #222c37;
   background: #10151b;
