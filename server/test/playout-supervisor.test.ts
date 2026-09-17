@@ -12,6 +12,7 @@ const okScript = path.join(root, "ok.mjs");
 const failScript = path.join(root, "fail.mjs");
 const flakyScript = path.join(root, "flaky.mjs");
 const stubbornScript = path.join(root, "stubborn.mjs");
+const cleanRestartScript = path.join(root, "clean-restart.mjs");
 const source = path.join(root, "source.ts");
 await fs.writeFile(source, "sample");
 await fs.writeFile(okScript, `
@@ -55,6 +56,21 @@ process.on("SIGTERM", () => {
   console.error("ignored sigterm");
 });
 setInterval(() => console.log("still running"), 100);
+`);
+await fs.writeFile(cleanRestartScript, `
+import { existsSync, writeFileSync } from "node:fs";
+const marker = process.argv[2];
+if (!existsSync(marker)) {
+  writeFileSync(marker, "exited");
+  console.log("first launch complete");
+  process.exit(0);
+}
+console.log("clean restart succeeded");
+const timer = setInterval(() => console.log("running"), 100);
+process.on("SIGTERM", () => {
+  clearInterval(timer);
+  process.exit(0);
+});
 `);
 
 const baseSettings: Settings = {
@@ -188,6 +204,17 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
   const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [flakyScript, marker, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
   const restarted = await supervisor.start(entry({ autoRestart: true }));
   await waitFor(() => restarted.restartCount > 0, "auto restart");
+  await waitForState(restarted, "running");
+  assert.equal(restarted.autoRestart, true);
+  await supervisor.stop(restarted.id);
+  await waitForState(restarted, "exited");
+}
+
+{
+  const marker = path.join(root, "clean-restart-marker");
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [cleanRestartScript, marker, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const restarted = await supervisor.start(entry({ autoRestart: true }));
+  await waitFor(() => restarted.restartCount > 0, "clean auto restart");
   await waitForState(restarted, "running");
   await supervisor.stop(restarted.id);
   await waitForState(restarted, "exited");

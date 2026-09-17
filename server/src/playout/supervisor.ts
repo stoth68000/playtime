@@ -21,6 +21,7 @@ const shutdownGraceMs = 3000;
 export class PlayoutSupervisor {
   private running = new Map<string, RunningProcess>();
   private instances = new Map<string, PlayoutInstance>();
+  private restartTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(private settings: Settings, private events: EventBus, private findFile: (id: string) => LibraryFile | undefined) {}
 
@@ -40,6 +41,7 @@ export class PlayoutSupervisor {
     let cleared = 0;
     for (const [id, instance] of this.instances.entries()) {
       if (!this.running.has(id) && ["exited", "failed"].includes(instance.state)) {
+        this.clearRestartTimer(id);
         this.instances.delete(id);
         cleared += 1;
       }
@@ -52,6 +54,7 @@ export class PlayoutSupervisor {
     const instance = this.instances.get(id);
     if (!instance) return undefined;
     if (this.running.has(id) || !["exited", "failed"].includes(instance.state)) throw new Error("Only completed playout records can be deleted");
+    this.clearRestartTimer(id);
     this.instances.delete(id);
     this.events.emit("playout.deleted", `Deleted ${instance.label}`, { id });
     return instance;
@@ -73,13 +76,14 @@ export class PlayoutSupervisor {
       filePath,
       target: entry.target,
       state: "starting",
+      autoRestart: entry.autoRestart,
       startedAt: new Date().toISOString(),
       restartCount: 0,
       command,
       recentLogs: []
     };
     this.instances.set(id, instance);
-    await this.launch(instance, entry.autoRestart);
+    await this.launch(instance);
     return instance;
   }
 
@@ -95,6 +99,7 @@ export class PlayoutSupervisor {
     const running = this.running.get(id);
     const instance = this.instances.get(id);
     if (!instance) throw new Error("Playout not found");
+    this.clearRestartTimer(id);
     instance.state = "stopping";
     this.events.emit("playout.stopping", `Stopping ${instance.label}`, { id });
     if (running) {
@@ -117,6 +122,7 @@ export class PlayoutSupervisor {
   async restart(id: string): Promise<PlayoutInstance> {
     const instance = this.instances.get(id);
     if (!instance) throw new Error("Playout not found");
+    this.clearRestartTimer(id);
     const running = this.running.get(id);
     if (running) {
       await this.stop(id);
@@ -132,7 +138,7 @@ export class PlayoutSupervisor {
     instance.pid = undefined;
     instance.command = this.renderCommand(instance.filePath, instance.target);
     this.validateCommand(instance.command, instance.filePath, instance.target);
-    await this.launch(instance, false);
+    await this.launch(instance);
     this.events.emit("playout.restarted", `Restarted ${instance.label}`, { id });
     return instance;
   }
@@ -156,6 +162,7 @@ export class PlayoutSupervisor {
 
   async shutdown(): Promise<void> {
     const running = [...this.running.values()];
+    for (const id of this.restartTimers.keys()) this.clearRestartTimer(id);
     if (!running.length) return;
     for (const item of running) {
       item.instance.state = "stopping";
@@ -190,7 +197,7 @@ export class PlayoutSupervisor {
     if (unresolved) throw new Error(`Rendered smoother command has unresolved template token: ${unresolved}`);
   }
 
-  private async launch(instance: PlayoutInstance, autoRestart: boolean): Promise<void> {
+  private async launch(instance: PlayoutInstance): Promise<void> {
     await ensureDir(path.join(resolveAppPath(this.settings.logsDir), "playouts"));
     const [command, ...args] = instance.command;
     instance.logPath = path.join(resolveAppPath(this.settings.logsDir), "playouts", `${instance.id}.log`);
@@ -236,6 +243,7 @@ export class PlayoutSupervisor {
     child.on("exit", (code, signal) => {
       const running = this.running.get(instance.id);
       if (running?.forceStopTimer) clearTimeout(running.forceStopTimer);
+      const shouldRestart = instance.autoRestart && instance.state !== "stopping";
       this.running.delete(instance.id);
       closeLog();
       instance.exitCode = code;
@@ -245,11 +253,23 @@ export class PlayoutSupervisor {
       instance.failureReason = instance.state === "failed" ? `Exited with code ${code ?? "unknown"}${signal ? ` (${signal})` : ""}` : undefined;
       resolveExit();
       this.events.emit("playout.exited", `${instance.label} exited`, { id: instance.id, code, signal });
-      if (autoRestart && instance.state === "failed") {
+      if (shouldRestart) {
         instance.restartCount += 1;
         instance.state = "restarting";
-        setTimeout(() => void this.launch(instance, autoRestart), 1000);
+        instance.pid = undefined;
+        const timer = setTimeout(() => {
+          this.restartTimers.delete(instance.id);
+          if (instance.state === "restarting") void this.launch(instance);
+        }, 1000);
+        this.restartTimers.set(instance.id, timer);
       }
     });
+  }
+
+  private clearRestartTimer(id: string): void {
+    const timer = this.restartTimers.get(id);
+    if (!timer) return;
+    clearTimeout(timer);
+    this.restartTimers.delete(id);
   }
 }

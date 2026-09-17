@@ -97,6 +97,7 @@ export interface PlayoutInstance {
   filePath: string;
   target: string;
   state: PlayoutState;
+  autoRestart: boolean;
   pid?: number;
   startedAt?: string;
   stoppedAt?: string;
