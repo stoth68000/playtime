@@ -905,7 +905,8 @@ label input[type="checkbox"] {
 }
 
 .picker-table .row {
-  grid-template-columns: minmax(300px, 1.4fr) 80px 105px 80px minmax(160px, 1fr) minmax(190px, 1fr);
+  grid-template-columns: 58px minmax(300px, 1.4fr) 80px 105px 80px minmax(160px, 1fr) minmax(190px, 1fr);
+  align-items: center;
 }
 
 .picker-row {

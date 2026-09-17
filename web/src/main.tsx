@@ -687,12 +687,13 @@ function FilePicker({ files, query, setQuery, choose, close }: { files: LibraryF
         </div>
         <div className="searchline"><Search size={16} /><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search filename, path, codec, service" /></div>
         <div className="table picker-table">
-          <div className="row head"><span>File</span><span>Duration</span><span>Bitrate</span><span>Programs</span><span>Video</span><span>Audio</span></div>
+          <div className="row head"><span>Preview</span><span>File</span><span>Duration</span><span>Bitrate</span><span>Programs</span><span>Video</span><span>Audio</span></div>
           {files.map((file) => {
             const video = videoSummary(file);
             const audio = audioSummary(file);
             return (
             <button className="row picker-row" key={file.id} onClick={() => choose(file)}>
+              <FileThumbnail file={file} size="small" />
               <span className="truncate" title={`${file.filename}\n${file.path}`}><strong>{file.filename}</strong><small>{file.path}</small></span>
               <span>{formatDuration(file.metadata.duration)}</span>
               <span>{formatBitrate(file.metadata.bitrate)}</span>
