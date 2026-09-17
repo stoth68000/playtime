@@ -526,12 +526,24 @@ function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; o
 
 function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: "default" | "small" | "entry" | "dashboard" }) {
   const thumbnailSrc = file?.metadata.thumbnailPath ? `/api/library/files/${encodeURIComponent(file.id)}/thumbnail` : undefined;
+  const [previewPosition, setPreviewPosition] = useState<{ left: number; top: number } | null>(null);
+  const positionPreview = (event: React.MouseEvent<HTMLSpanElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const previewWidth = 320;
+    const previewHeight = 180;
+    const margin = 12;
+    const rightSide = rect.right + margin;
+    const left = rightSide + previewWidth <= window.innerWidth - margin ? rightSide : Math.max(margin, rect.left - previewWidth - margin);
+    const centeredTop = rect.top + rect.height / 2 - previewHeight / 2;
+    const top = Math.min(Math.max(margin, centeredTop), Math.max(margin, window.innerHeight - previewHeight - margin));
+    setPreviewPosition({ left, top });
+  };
   return (
-    <span className={clsx("thumbnail-cell", { small: size === "small", entry: size === "entry", dashboard: size === "dashboard" })}>
+    <span className={clsx("thumbnail-cell", { small: size === "small", entry: size === "entry", dashboard: size === "dashboard" })} onMouseEnter={positionPreview} onMouseMove={positionPreview} onMouseLeave={() => setPreviewPosition(null)}>
       {thumbnailSrc ? (
         <>
           <img className="thumb-image" src={thumbnailSrc} alt="" />
-          <span className="thumbnail-preview"><img src={thumbnailSrc} alt="" /></span>
+          <span className="thumbnail-preview" style={previewPosition ?? undefined}><img src={thumbnailSrc} alt="" /></span>
         </>
       ) : <span className="thumbnail-placeholder"><Library size={size === "small" ? 14 : 18} /></span>}
     </span>
