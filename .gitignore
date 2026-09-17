@@ -7,4 +7,3 @@ data/logs/
 .DS_Store
 *.log
 
-samples/*.ts
