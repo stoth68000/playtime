@@ -1,0 +1,16 @@
+{
+  "name": "demo-grid",
+  "description": "Local test collection. Switch smootherCommand to ./scripts/fake_smoother.mjs for safe process testing.",
+  "playouts": [
+    {
+      "id": "demo-1",
+      "label": "Demo UDP Feed",
+      "filePath": "./samples/demo.ts",
+      "target": "udp://239.10.10.1:5000",
+      "loop": true,
+      "autoRestart": false,
+      "enabled": true
+    }
+  ],
+  "updatedAt": "2026-09-17T00:00:00.000Z"
+}

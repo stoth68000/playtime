@@ -1,0 +1,28 @@
+import type { Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings, ActivityEvent } from "../types";
+
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) }
+  });
+  if (!response.ok) throw new Error((await response.text()) || response.statusText);
+  return response.json() as Promise<T>;
+}
+
+export const api = {
+  health: () => request<{ ok: boolean; warnings: string[] }>("/api/health"),
+  settings: () => request<Settings>("/api/settings"),
+  saveSettings: (settings: Settings) => request<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(settings) }),
+  files: () => request<LibraryFile[]>("/api/library/files"),
+  rescan: () => request<LibraryFile[]>("/api/library/rescan", { method: "POST" }),
+  collections: () => request<Collection[]>("/api/collections"),
+  saveCollection: (collection: Collection) => request<Collection>("/api/collections", { method: "POST", body: JSON.stringify(collection) }),
+  deleteCollection: (name: string) => request<{ ok: boolean }>(`/api/collections/${encodeURIComponent(name)}`, { method: "DELETE" }),
+  playouts: () => request<PlayoutInstance[]>("/api/playouts"),
+  startPlayout: (playout: CollectionPlayout) => request<PlayoutInstance>("/api/playouts", { method: "POST", body: JSON.stringify(playout) }),
+  stopPlayout: (id: string) => request<PlayoutInstance>(`/api/playouts/${id}/stop`, { method: "POST" }),
+  restartPlayout: (id: string) => request<PlayoutInstance>(`/api/playouts/${id}/restart`, { method: "POST" }),
+  startCollection: (name: string) => request<PlayoutInstance[]>(`/api/collections/${encodeURIComponent(name)}/start`, { method: "POST" }),
+  stopCollection: (name: string) => request<{ stopped: number }>(`/api/collections/${encodeURIComponent(name)}/stop`, { method: "POST" }),
+  activity: () => request<ActivityEvent[]>("/api/activity")
+};
