@@ -1,3 +1,4 @@
+import { createReadStream } from "node:fs";
 import type { FastifyInstance } from "fastify";
 import type { Collection, CollectionPlayout, Settings } from "../models.js";
 import { SettingsStore } from "../settings/store.js";
@@ -30,6 +31,11 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
   });
 
   app.get("/api/library/files", async () => services.library.list());
+  app.get<{ Params: { id: string } }>("/api/library/files/:id/thumbnail", async (request, reply) => {
+    const thumbnailPath = await services.library.thumbnailPath(request.params.id);
+    if (!thumbnailPath) return reply.code(404).send({ error: "Thumbnail not found" });
+    return reply.type("image/jpeg").send(createReadStream(thumbnailPath));
+  });
   app.get<{ Params: { id: string } }>("/api/library/files/:id", async (request, reply) => {
     const file = services.library.get(request.params.id);
     if (!file) return reply.code(404).send({ error: "File not found" });

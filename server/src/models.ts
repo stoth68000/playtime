@@ -38,6 +38,7 @@ export interface FileMetadata {
   otherStreams?: StreamMetadata[];
   codecs?: string[];
   serviceNames?: string[];
+  thumbnailPath?: string;
   errors?: string[];
   notes?: string[];
 }

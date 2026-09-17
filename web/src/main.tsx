@@ -376,9 +376,10 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
     <section className="panel">
       <div className="toolbar"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search library" /><button onClick={() => void rescan()}><FolderSync size={16} />Rescan</button></div>
       <div className="table library-table">
-        <div className="row head"><span>File</span><span>Duration</span><span>Bitrate</span><span>Service</span><span>Video</span><span>Audio</span><span>TS</span><span></span></div>
+        <div className="row head"><span>Preview</span><span>File</span><span>Duration</span><span>Bitrate</span><span>Service</span><span>Video</span><span>Audio</span><span>TS</span><span></span></div>
         {files.map((file) => (
           <div className="row" key={file.id}>
+            <FileThumbnail file={file} />
             <span className="truncate"><strong>{file.filename}</strong><small>{file.path}</small></span>
             <span>{formatDuration(file.metadata.duration)}</span>
             <span>{formatBitrate(file.metadata.bitrate)}</span>
@@ -392,6 +393,14 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
         {!files.length && <div className="empty">No MPEG-TS files indexed. Check settings, then rescan.</div>}
       </div>
     </section>
+  );
+}
+
+function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: "default" | "small" }) {
+  return (
+    <span className={clsx("thumbnail-cell", { small: size === "small" })}>
+      {file?.metadata.thumbnailPath ? <img src={`/api/library/files/${encodeURIComponent(file.id)}/thumbnail`} alt="" /> : <span className="thumbnail-placeholder"><Library size={size === "small" ? 14 : 18} /></span>}
+    </span>
   );
 }
 
@@ -476,7 +485,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
               </div>
               <div className="entry-grid">
                 <button className="source-button" onClick={() => setPickerEntryId(entry.id)}>
-                  <Library size={15} />
+                  <FileThumbnail file={selectedFile} size="small" />
                   <span>{fileLabel(entry, files)}</span>
                 </button>
                 {!entry.fileId && <input value={entry.filePath ?? ""} onChange={(e) => updateEntry(entry.id, { filePath: e.target.value })} placeholder="/path/to/file.ts" />}

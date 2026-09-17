@@ -1,13 +1,17 @@
+import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import { promises as fs, type Dirent } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { promisify } from "node:util";
 import type { LibraryFile, Settings } from "../models.js";
-import { readJson, writeJson } from "../util/fs.js";
+import { ensureDir, readJson, writeJson } from "../util/fs.js";
 import { resolveAppPath } from "../util/paths.js";
 import { EventBus } from "../events/eventBus.js";
 import { probeTransportStream } from "./probe.js";
 
 const extensions = new Set([".ts", ".mts", ".m2ts", ".mpegts"]);
+const execFileAsync = promisify(execFile);
 
 export class LibraryScanner {
   private files = new Map<string, LibraryFile>();
@@ -29,6 +33,18 @@ export class LibraryScanner {
 
   get(id: string): LibraryFile | undefined {
     return this.files.get(id);
+  }
+
+  async thumbnailPath(id: string): Promise<string | undefined> {
+    const file = this.files.get(id);
+    if (!file?.metadata.thumbnailPath) return undefined;
+    const thumbnailPath = resolveAppPath(file.metadata.thumbnailPath);
+    try {
+      await fs.access(thumbnailPath);
+      return thumbnailPath;
+    } catch {
+      return undefined;
+    }
   }
 
   async scan(): Promise<LibraryFile[]> {
@@ -63,7 +79,8 @@ export class LibraryScanner {
         const stat = await fs.stat(fullPath);
         const id = crypto.createHash("sha1").update(fullPath).digest("hex").slice(0, 16);
         const cached = this.files.get(id);
-        const unchanged = cached?.size === stat.size && cached.modifiedAt === stat.mtime.toISOString() && cached.metadataStatus === "probed";
+        const cachedHasThumbnail = !cached?.metadata.videoStreams?.length || Boolean(cached.metadata.thumbnailPath && existsSync(resolveAppPath(cached.metadata.thumbnailPath)));
+        const unchanged = cached?.size === stat.size && cached.modifiedAt === stat.mtime.toISOString() && cached.metadataStatus === "probed" && cachedHasThumbnail;
         output.push({
           id,
           path: fullPath,
@@ -88,11 +105,38 @@ export class LibraryScanner {
         file.metadataStatus = "pending";
         this.events.emit("library.probe.started", `Probing ${file.filename}`, { id: file.id });
         const metadata = await probeTransportStream(file.path, this.settings);
+        await this.generateThumbnail(file.id, file.path, metadata);
         file.metadata = metadata;
         file.metadataStatus = metadata.errors?.length ? "failed" : "probed";
         this.events.emit("library.probe.completed", `Probed ${file.filename}`, { id: file.id, status: file.metadataStatus });
       }
     };
     await Promise.all(Array.from({ length: Math.min(concurrency, pending.length) }, worker));
+  }
+
+  private async generateThumbnail(id: string, filePath: string, metadata: LibraryFile["metadata"]): Promise<void> {
+    if (!metadata.videoStreams?.length) return;
+    const thumbnailPath = path.join(resolveAppPath(this.settings.cacheDir), "thumbnails", `${id}.jpg`);
+    await ensureDir(path.dirname(thumbnailPath));
+    try {
+      await execFileAsync(this.ffmpegCommand(), [
+        "-y",
+        "-v", "error",
+        "-i", filePath,
+        "-map", "0:v:0",
+        "-frames:v", "1",
+        "-vf", "scale=160:-1",
+        thumbnailPath
+      ], { timeout: 30_000, maxBuffer: 1024 * 1024 });
+      metadata.thumbnailPath = thumbnailPath;
+    } catch (error) {
+      metadata.notes = [...(metadata.notes ?? []), `Thumbnail generation failed: ${(error as Error).message}`];
+    }
+  }
+
+  private ffmpegCommand(): string {
+    const probeCommand = this.settings.metadataProbeCommand;
+    if (probeCommand.endsWith("ffprobe")) return `${probeCommand.slice(0, -"ffprobe".length)}ffmpeg`;
+    return "ffmpeg";
   }
 }
