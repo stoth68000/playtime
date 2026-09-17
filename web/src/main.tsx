@@ -485,11 +485,11 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
 }
 
 function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; output: string; error: string; close: () => void }) {
-  const [tab, setTab] = useState<"ffprobe" | "mediainfo">("ffprobe");
+  const [tab, setTab] = useState<"ffprobe" | "mediainfo">("mediainfo");
   const [mediaInfoOutput, setMediaInfoOutput] = useState("");
   const [mediaInfoError, setMediaInfoError] = useState("");
-  const loadMediaInfo = async () => {
-    setTab("mediainfo");
+  const loadMediaInfo = async (switchTab = true) => {
+    if (switchTab) setTab("mediainfo");
     if (mediaInfoOutput || mediaInfoError) return;
     try {
       const result = await api.mediaInfoOutput(file.id);
@@ -498,6 +498,9 @@ function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; o
       setMediaInfoError((err as Error).message);
     }
   };
+  useEffect(() => {
+    void loadMediaInfo(false);
+  }, [file.id]);
   const activeOutput = tab === "ffprobe" ? output : mediaInfoOutput;
   const activeError = tab === "ffprobe" ? error : mediaInfoError;
   return (
@@ -509,8 +512,8 @@ function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; o
         </div>
         <div className="probe-title"><strong>{file.filename}</strong><span>{file.path}</span></div>
         <div className="probe-tabs" role="tablist" aria-label="Media analysis output">
-          <button className={clsx({ active: tab === "ffprobe" })} onClick={() => setTab("ffprobe")}>ffprobe</button>
           <button className={clsx({ active: tab === "mediainfo" })} onClick={() => void loadMediaInfo()}>MediaInfo</button>
+          <button className={clsx({ active: tab === "ffprobe" })} onClick={() => setTab("ffprobe")}>ffprobe</button>
         </div>
         <div className="probe-body">
           {activeError && <div className="alert danger">{activeError}</div>}
