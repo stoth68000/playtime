@@ -2,6 +2,8 @@
 
 PlayTime is a local MPEG-TS playout control application. It scans transport-stream libraries, saves playout collections as JSON, and supervises `tstools_bitrate_smoother` instances through a REST API and dark broadcast-style web UI.
 
+![PlayTime dashboard](README-screenshot.png)
+
 ## Quick Start
 
 ```sh
