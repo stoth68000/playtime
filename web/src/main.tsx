@@ -302,16 +302,18 @@ function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain,
         </div>
       </div>
       <div className="table">
-        <div className="row head playout-row"><span>Preview</span><span>State</span><span>Label</span><span>Source</span><span>Target</span><span>PID</span><span>Uptime</span><span>Last Log</span><span>Controls</span></div>
+        <div className="row head playout-row"><span>Preview</span><span>State</span><span>Details</span><span>PID</span><span>Uptime</span><span>Last Log</span><span>Controls</span></div>
         {visible.map((p) => {
           const file = files.find((item) => item.path === p.filePath);
           return (
           <div className={clsx("row", "playout-row", "inspect-row", { selected: selectedId === p.id })} key={p.id} role="button" tabIndex={0} onClick={() => setSelectedId(p.id)} onKeyDown={(event) => { if (event.key === "Enter") setSelectedId(p.id); }}>
             <FileThumbnail file={file} size="dashboard" />
             <span><i className={clsx("lamp", p.state)} />{p.state}</span>
-            <span>{p.label}</span>
-            <span className="truncate">{p.filePath}</span>
-            <span className="mono">{p.target}</span>
+            <span className="playout-details">
+              <strong className="truncate">{p.label}</strong>
+              <small className="truncate">{p.filePath}</small>
+              <small className="mono truncate">{p.target}</small>
+            </span>
             <span>{p.pid ?? "-"}</span>
             <span>{uptime(p.startedAt)}</span>
             <span className="truncate log-snippet">{p.failureReason ?? p.recentLogs.at(-1) ?? "-"}</span>

@@ -283,7 +283,23 @@ h2 {
 }
 
 .playout-row {
-  grid-template-columns: 82px 110px 160px minmax(260px, 1.2fr) 220px 52px 64px minmax(110px, 0.45fr) 90px;
+  grid-template-columns: 82px 110px minmax(380px, 1.6fr) 52px 64px minmax(110px, 0.45fr) 90px;
+}
+
+.playout-details {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.playout-details strong {
+  color: #eef3f8;
+  font-size: 13px;
+}
+
+.playout-details small {
+  color: #8492a3;
+  font-size: 11px;
 }
 
 .inspect-row {
