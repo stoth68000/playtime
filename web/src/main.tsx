@@ -81,7 +81,32 @@ function formatVideoCodec(codec?: string): string | undefined {
 function audioSummary(file: LibraryFile): string {
   const audio = file.metadata.audioStreams ?? [];
   if (!audio.length) return "-";
-  return audio.map((stream) => [stream.pid, stream.codec, stream.channelLayout ?? (stream.channels ? `${stream.channels}ch` : undefined), stream.language].filter(Boolean).join(" ")).join(" / ");
+  return audio.map((stream) => [formatAudioCodec(stream.codec), formatChannels(stream.channelLayout, stream.channels)].filter(Boolean).join(" ")).join(" / ");
+}
+
+function formatAudioCodec(codec?: string): string | undefined {
+  if (!codec) return undefined;
+  const names: Record<string, string> = {
+    ac3: "AC3",
+    eac3: "E-AC3",
+    aac: "AAC",
+    mp2: "MP2",
+    mp3: "MP3"
+  };
+  return names[codec] ?? codec.toUpperCase();
+}
+
+function formatChannels(layout?: string, channels?: number): string | undefined {
+  const clean = layout?.toLowerCase();
+  if (clean?.startsWith("mono")) return "1.0";
+  if (clean?.startsWith("stereo")) return "2.0";
+  if (clean?.startsWith("5.1")) return "5.1";
+  if (clean?.startsWith("7.1")) return "7.1";
+  if (channels === 1) return "1.0";
+  if (channels === 2) return "2.0";
+  if (channels === 6) return "5.1";
+  if (channels === 8) return "7.1";
+  return channels ? `${channels}ch` : undefined;
 }
 
 function collectionComparable(collection: Collection): string {
