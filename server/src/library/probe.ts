@@ -51,11 +51,8 @@ interface FfprobeStream {
 }
 
 export async function probeTransportStream(filePath: string, settings: Settings): Promise<FileMetadata> {
-  const command = settings.metadataProbeCommand.includes("/") ? resolveAppPath(settings.metadataProbeCommand) : settings.metadataProbeCommand;
-  const args = settings.metadataProbeArgs.map((arg) => arg.replaceAll("{file}", filePath));
-
   try {
-    const { stdout } = await execFileAsync(command, args, { maxBuffer: 8 * 1024 * 1024, timeout: 30_000 });
+    const stdout = await ffprobeOutput(filePath, settings);
     return normalize(JSON.parse(stdout) as FfprobeOutput, filePath);
   } catch (error) {
     return {
@@ -64,6 +61,14 @@ export async function probeTransportStream(filePath: string, settings: Settings)
     };
   }
 }
+
+export async function ffprobeOutput(filePath: string, settings: Settings): Promise<string> {
+  const command = settings.metadataProbeCommand.includes("/") ? resolveAppPath(settings.metadataProbeCommand) : settings.metadataProbeCommand;
+  const args = settings.metadataProbeArgs.map((arg) => arg.replaceAll("{file}", filePath));
+  const { stdout } = await execFileAsync(command, args, { maxBuffer: 8 * 1024 * 1024, timeout: 30_000 });
+  return stdout;
+}
+
 
 function normalize(data: FfprobeOutput, filePath: string): FileMetadata {
   const streams = data.streams ?? [];

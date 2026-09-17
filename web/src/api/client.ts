@@ -15,6 +15,7 @@ export const api = {
   settings: () => request<Settings>("/api/settings"),
   saveSettings: (settings: Settings) => request<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(settings) }),
   files: () => request<LibraryFile[]>("/api/library/files"),
+  probeOutput: (id: string) => request<{ output: string }>(`/api/library/files/${encodeURIComponent(id)}/probe-output`),
   rescan: () => request<LibraryFile[]>("/api/library/rescan", { method: "POST" }),
   collections: () => request<Collection[]>("/api/collections"),
   saveCollection: (collection: Collection) => request<Collection>("/api/collections", { method: "POST", body: JSON.stringify(collection) }),

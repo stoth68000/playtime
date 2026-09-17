@@ -8,7 +8,7 @@ import type { LibraryFile, Settings } from "../models.js";
 import { ensureDir, readJson, writeJson } from "../util/fs.js";
 import { resolveAppPath } from "../util/paths.js";
 import { EventBus } from "../events/eventBus.js";
-import { probeTransportStream } from "./probe.js";
+import { ffprobeOutput, probeTransportStream } from "./probe.js";
 
 const extensions = new Set([".ts", ".mts", ".m2ts", ".mpegts"]);
 const execFileAsync = promisify(execFile);
@@ -45,6 +45,12 @@ export class LibraryScanner {
     } catch {
       return undefined;
     }
+  }
+
+  async probeOutput(id: string): Promise<string | undefined> {
+    const file = this.files.get(id);
+    if (!file) return undefined;
+    return ffprobeOutput(file.path, this.settings);
   }
 
   async scan(): Promise<LibraryFile[]> {

@@ -434,7 +434,22 @@ function Detail({ label, value, wide }: { label: string; value: string; wide?: b
 }
 
 function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: LibraryFile[]; query: string; setQuery: (q: string) => void; rescan: () => Promise<unknown>; addFile: (file: LibraryFile) => void }) {
+  const [probeFile, setProbeFile] = useState<LibraryFile | null>(null);
+  const [probeOutput, setProbeOutput] = useState("");
+  const [probeError, setProbeError] = useState("");
+  const openProbe = async (file: LibraryFile) => {
+    setProbeFile(file);
+    setProbeOutput("");
+    setProbeError("");
+    try {
+      const result = await api.probeOutput(file.id);
+      setProbeOutput(result.output);
+    } catch (err) {
+      setProbeError((err as Error).message);
+    }
+  };
   return (
+    <>
     <section className="panel">
       <div className="toolbar"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search library" /><button onClick={() => void rescan()}><FolderSync size={16} />Rescan</button></div>
       <div className="table library-table">
@@ -444,7 +459,7 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
           const transportType = transportTypeSummary(file);
           const audio = audioSummary(file);
           return (
-          <div className="row" key={file.id}>
+          <div className="row" key={file.id} onDoubleClick={() => void openProbe(file)}>
             <FileThumbnail file={file} />
             <span className="truncate" title={`${file.filename}\n${file.path}`}><strong>{file.filename}</strong><small>{file.path}</small></span>
             <span>{formatDuration(file.metadata.duration)}</span>
@@ -454,13 +469,31 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
               <small>{transportType}</small>
             </span>
             <span className="truncate media-summary-cell" title={audio}>{audio}</span>
-            <span><button onClick={() => addFile(file)}>Add</button></span>
+            <span><button onClick={(event) => { event.stopPropagation(); addFile(file); }}>Add</button></span>
           </div>
           );
         })}
         {!files.length && <div className="empty">No MPEG-TS files indexed. Check settings, then rescan.</div>}
       </div>
     </section>
+    {probeFile && <ProbeOutputModal file={probeFile} output={probeOutput} error={probeError} close={() => setProbeFile(null)} />}
+    </>
+  );
+}
+
+function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; output: string; error: string; close: () => void }) {
+  return (
+    <div className="modal-backdrop">
+      <div className="modal probe-modal">
+        <div className="modal-head">
+          <h2>ffprobe Output</h2>
+          <button title="Close" onClick={close}><X size={16} /></button>
+        </div>
+        <div className="probe-title"><strong>{file.filename}</strong><span>{file.path}</span></div>
+        {error && <div className="alert danger">{error}</div>}
+        <pre className="probe-output">{output || (!error ? "Loading..." : "")}</pre>
+      </div>
+    </div>
   );
 }
 

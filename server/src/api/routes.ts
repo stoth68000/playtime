@@ -36,6 +36,11 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
     if (!thumbnailPath) return reply.code(404).send({ error: "Thumbnail not found" });
     return reply.type("image/jpeg").send(createReadStream(thumbnailPath));
   });
+  app.get<{ Params: { id: string } }>("/api/library/files/:id/probe-output", async (request, reply) => {
+    const output = await services.library.probeOutput(request.params.id);
+    if (!output) return reply.code(404).send({ error: "File not found" });
+    return { output };
+  });
   app.get<{ Params: { id: string } }>("/api/library/files/:id", async (request, reply) => {
     const file = services.library.get(request.params.id);
     if (!file) return reply.code(404).send({ error: "File not found" });
