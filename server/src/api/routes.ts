@@ -20,6 +20,36 @@ export interface AppServices {
 }
 
 export async function registerRoutes(app: FastifyInstance, services: AppServices): Promise<void> {
+  app.get("/docs", async (_request, reply) => {
+    return reply.type("text/html").send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PlayTime API Docs</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+    <style>
+      body { margin: 0; background: #0f172a; }
+      .swagger-ui .topbar { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script>
+      window.addEventListener("load", () => {
+        window.ui = SwaggerUIBundle({
+          url: "/openapi.json",
+          dom_id: "#swagger-ui",
+          deepLinking: true,
+          layout: "BaseLayout"
+        });
+      });
+    </script>
+  </body>
+</html>`);
+  });
+
   app.get("/openapi.json", async (_request, reply) => {
     const spec = await readFile(path.resolve(process.cwd(), "openapi.json"), "utf8");
     return reply.type("application/json").send(spec);

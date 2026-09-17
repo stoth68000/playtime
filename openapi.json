@@ -51,6 +51,25 @@
         }
       }
     },
+    "/docs": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Open Swagger UI documentation",
+        "operationId": "getDocs",
+        "responses": {
+          "200": {
+            "description": "Swagger UI HTML page",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": ["System"],
