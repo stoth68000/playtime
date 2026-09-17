@@ -142,6 +142,13 @@ function App() {
     await refresh();
   };
 
+  const deleteCollection = async (name: string) => {
+    await api.deleteCollection(name);
+    const nextCollections = await api.collections();
+    setCollections(nextCollections);
+    setActiveCollection(nextCollections[0] ?? emptyCollection());
+  };
+
   const updateEntry = (id: string, patch: Partial<CollectionPlayout>) => {
     setActiveCollection((collection) => ({
       ...collection,
@@ -177,7 +184,7 @@ function App() {
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
         {page === "dashboard" && <Dashboard playouts={playouts} onStop={(id) => api.stopPlayout(id).then(refresh)} onRestart={(id) => api.restartPlayout(id).then(refresh)} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: true, autoRestart: false, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
-        {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} save={saveCollection} updateEntry={updateEntry} refresh={refresh} />}
+        {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} save={saveCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "activity" && <ActivityPage activity={activity} />}
         {page === "settings" && settings && <SettingsPage settings={settings} setSettings={setSettings} save={(value) => api.saveSettings(value).then((saved) => { setSettings(saved); return refresh(); })} />}
       </main>
@@ -299,8 +306,8 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
   );
 }
 
-function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; save: () => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
-  const { collections, active, setActive, files, save, updateEntry, refresh } = props;
+function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; save: () => Promise<void>; deleteCollection: (name: string) => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
+  const { collections, active, setActive, files, save, deleteCollection: removeCollection, updateEntry, refresh } = props;
   const [pickerEntryId, setPickerEntryId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
   const savedVersion = collections.find((collection) => collection.name === active.name);
@@ -340,9 +347,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   const deleteCollection = async () => {
     if (!savedVersion) return;
     if (!window.confirm(`Delete collection "${active.name}"?`)) return;
-    await api.deleteCollection(active.name);
-    setActive(emptyCollection());
-    await refresh();
+    await removeCollection(active.name);
   };
   return (
     <div className="split">

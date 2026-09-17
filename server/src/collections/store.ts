@@ -64,7 +64,11 @@ export class CollectionStore {
   }
 
   async delete(name: string): Promise<void> {
-    await fs.unlink(this.fileFor(name));
+    try {
+      await fs.unlink(this.fileFor(name));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
     this.events.emit("collection.deleted", `Collection deleted: ${name}`, { name });
   }
 
