@@ -14,7 +14,7 @@ const newEntry = (file?: LibraryFile): CollectionPlayout => ({
   id: crypto.randomUUID(),
   label: file?.filename ?? "New playout",
   fileId: file?.id,
-  filePath: file ? undefined : "",
+  filePath: file?.path ?? "",
   target: "udp://239.10.10.1:5000",
   loop: true,
   autoRestart: false,
@@ -122,15 +122,37 @@ function validateEntry(entry: CollectionPlayout, files: LibraryFile[], entries: 
   const issues: string[] = [];
   const target = entry.target.trim();
   if (!entry.label.trim()) issues.push("Missing label");
+  const resolvedFile = resolveEntryFile(entry, files);
   if (!entry.fileId && !entry.filePath?.trim()) issues.push("Missing source");
-  if (entry.fileId && !files.some((file) => file.id === entry.fileId)) issues.push("Library file not found");
+  if (entry.fileId && !resolvedFile) issues.push("Library file not found");
   if (!/^(udp|srt):\/\/[^:/\s]+:\d+([/?#].*)?$/i.test(target)) issues.push("Invalid target");
   if (entry.enabled && entries.some((other) => other.id !== entry.id && other.enabled && other.target.trim() === target)) issues.push("Duplicate target");
   return issues;
 }
 
+function basename(value?: string): string {
+  return value?.split(/[\\/]/).filter(Boolean).pop() ?? "";
+}
+
+function resolveEntryFile(entry: CollectionPlayout, files: LibraryFile[]): LibraryFile | undefined {
+  if (entry.fileId) {
+    const byId = files.find((file) => file.id === entry.fileId);
+    if (byId) return byId;
+  }
+  if (entry.filePath) {
+    const byPath = files.find((file) => file.path === entry.filePath);
+    if (byPath) return byPath;
+    const name = basename(entry.filePath);
+    const byPathName = files.find((file) => file.filename === name);
+    if (byPathName) return byPathName;
+  }
+  return files.find((file) => file.filename === entry.label);
+}
+
 function fileLabel(entry: CollectionPlayout, files: LibraryFile[]): string {
-  if (entry.fileId) return files.find((file) => file.id === entry.fileId)?.filename ?? "Missing library file";
+  const resolvedFile = resolveEntryFile(entry, files);
+  if (resolvedFile) return resolvedFile.filename;
+  if (entry.fileId) return "Missing library file";
   return entry.filePath || "Manual file path";
 }
 
@@ -574,7 +596,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
     if (pickerEntryId === "new") {
       setActive({ ...active, playouts: [...active.playouts, newEntry(file)] });
     } else {
-      updateEntry(pickerEntryId, { fileId: file.id, filePath: undefined, label: file.filename });
+      updateEntry(pickerEntryId, { fileId: file.id, filePath: file.path, label: file.filename });
     }
     setPickerEntryId(null);
     setPickerQuery("");
@@ -639,7 +661,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
         <div className="entry-list">
           {active.playouts.map((entry, index) => {
             const issues = validateEntry(entry, files, active.playouts);
-            const selectedFile = entry.fileId ? files.find((file) => file.id === entry.fileId) : undefined;
+            const selectedFile = resolveEntryFile(entry, files);
             return (
             <div className={clsx("entry", { invalid: issues.length })} key={entry.id}>
               <div className="entry-head">

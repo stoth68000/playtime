@@ -23,7 +23,7 @@ export class PlayoutSupervisor {
   private instances = new Map<string, PlayoutInstance>();
   private restartTimers = new Map<string, NodeJS.Timeout>();
 
-  constructor(private settings: Settings, private events: EventBus, private findFile: (id: string) => LibraryFile | undefined) {}
+  constructor(private settings: Settings, private events: EventBus, private listFiles: () => LibraryFile[]) {}
 
   updateSettings(settings: Settings): void {
     this.settings = settings;
@@ -76,7 +76,7 @@ export class PlayoutSupervisor {
   }
 
   async start(entry: CollectionPlayout, collection?: Collection): Promise<PlayoutInstance> {
-    const filePath = entry.filePath ?? (entry.fileId ? this.findFile(entry.fileId)?.path : undefined);
+    const filePath = this.resolveEntryFilePath(entry);
     if (!filePath) throw new Error("Unable to resolve playout source file");
     if (!/^(udp|srt):\/\/.+/i.test(entry.target)) throw new Error("Target must start with udp:// or srt://");
 
@@ -163,7 +163,7 @@ export class PlayoutSupervisor {
     const activeStates: PlayoutInstance["state"][] = ["starting", "running", "restarting", "stopping"];
     const entryIds = new Set(collection.playouts.map((entry) => entry.id));
     const sourcesAndTargets = new Set(collection.playouts.map((entry) => {
-      const filePath = entry.filePath ?? (entry.fileId ? this.findFile(entry.fileId)?.path : undefined);
+      const filePath = this.resolveEntryFilePath(entry);
       return filePath ? `${filePath}\0${entry.target}` : "";
     }).filter(Boolean));
     const matching = this.list().filter((instance) => {
@@ -211,6 +211,22 @@ export class PlayoutSupervisor {
     if (!command.includes(target)) throw new Error("Rendered smoother command does not include the target URL");
     const unresolved = command.find((part) => part.includes("{file}") || part.includes("{target}"));
     if (unresolved) throw new Error(`Rendered smoother command has unresolved template token: ${unresolved}`);
+  }
+
+  private resolveEntryFilePath(entry: CollectionPlayout): string | undefined {
+    const files = this.listFiles();
+    if (entry.fileId) {
+      const byId = files.find((file) => file.id === entry.fileId);
+      if (byId) return byId.path;
+    }
+    if (entry.filePath) {
+      const byPath = files.find((file) => file.path === entry.filePath);
+      if (byPath) return byPath.path;
+      const byPathName = files.find((file) => file.filename === path.basename(entry.filePath ?? ""));
+      if (byPathName) return byPathName.path;
+      return entry.filePath;
+    }
+    return files.find((file) => file.filename === entry.label)?.path;
   }
 
   private async launch(instance: PlayoutInstance): Promise<void> {

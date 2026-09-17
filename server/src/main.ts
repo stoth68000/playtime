@@ -16,7 +16,7 @@ let settings = await settingsStore.load();
 const events = new EventBus();
 const library = new LibraryScanner(settings, events);
 const collections = new CollectionStore(settings, events);
-const playouts = new PlayoutSupervisor(settings, events, (id) => library.get(id));
+const playouts = new PlayoutSupervisor(settings, events, () => library.list());
 let shuttingDown = false;
 const startupOnBootDelayMs = 3000;
 

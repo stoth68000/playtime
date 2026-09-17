@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { PlayoutSupervisor } from "../src/playout/supervisor.js";
 import { EventBus } from "../src/events/eventBus.js";
-import type { Collection, CollectionPlayout, PlayoutInstance, Settings } from "../src/models.js";
+import type { Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings } from "../src/models.js";
 
 const root = await fs.mkdtemp(path.join(os.tmpdir(), "playtime-supervisor-"));
 const okScript = path.join(root, "ok.mjs");
@@ -99,6 +99,17 @@ const entry = (patch: Partial<CollectionPlayout> = {}): CollectionPlayout => ({
   ...patch
 });
 
+const librarySource: LibraryFile = {
+  id: "current-library-id",
+  path: source,
+  filename: path.basename(source),
+  size: 6,
+  modifiedAt: new Date().toISOString(),
+  extension: ".ts",
+  metadataStatus: "probed",
+  metadata: {}
+};
+
 async function waitFor(predicate: () => boolean, label: string): Promise<void> {
   const deadline = Date.now() + 6000;
   while (Date.now() < deadline) {
@@ -113,14 +124,14 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 }
 
 {
-  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => []);
   const command = supervisor.renderCommand(source, "udp://239.1.1.1:5000");
   assert.deepEqual(command, [process.execPath, okScript, "-i", source, "-o", "udp://239.1.1.1:5000"]);
   assert.throws(() => supervisor.validateCommand([process.execPath, okScript, "-i", source], source, "udp://239.1.1.1:5000"), /target URL/);
 }
 
 {
-  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => []);
   const started = await supervisor.start(entry());
   assert.equal(started.state, "running");
   assert.ok(started.pid);
@@ -134,7 +145,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 }
 
 {
-  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => []);
   const first = await supervisor.start(entry({ target: "udp://239.1.1.1:5001" }));
   const second = await supervisor.start(entry({ target: "udp://239.1.1.1:5002" }));
   await supervisor.shutdown();
@@ -146,7 +157,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 }
 
 {
-  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => []);
   const collectionEntry = entry();
   const collection: Collection = {
     name: "Current Collection",
@@ -164,7 +175,16 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 }
 
 {
-  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => [librarySource]);
+  const started = await supervisor.start(entry({ fileId: "stale-library-id", filePath: undefined, label: path.basename(source) }));
+  assert.equal(started.filePath, source);
+  await supervisor.stop(started.id);
+  await waitForState(started, "exited");
+  supervisor.clearCompleted();
+}
+
+{
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => []);
   const collectionEntry = entry();
   const collection: Collection = {
     name: "Delete Me",
@@ -182,7 +202,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 }
 
 {
-  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => []);
   const first = await supervisor.start(entry());
   const restarted = await supervisor.restart(first.id);
   assert.equal(restarted.id, first.id);
@@ -200,7 +220,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 }
 
 {
-  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [failScript, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [failScript, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => []);
   const failed = await supervisor.start(entry());
   await waitForState(failed, "failed");
   assert.match(failed.failureReason ?? "", /Exited with code 7/);
@@ -211,7 +231,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 }
 
 {
-  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => []);
   const started = await supervisor.start(entry());
   assert.throws(() => supervisor.delete(started.id), /completed playout/);
   await supervisor.stop(started.id);
@@ -221,7 +241,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 
 {
   const marker = path.join(root, "flaky-marker");
-  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [flakyScript, marker, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [flakyScript, marker, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => []);
   const restarted = await supervisor.start(entry({ autoRestart: true }));
   await waitFor(() => restarted.restartCount > 0, "auto restart");
   await waitForState(restarted, "running");
@@ -233,7 +253,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 
 {
   const marker = path.join(root, "clean-restart-marker");
-  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [cleanRestartScript, marker, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [cleanRestartScript, marker, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => []);
   const restarted = await supervisor.start(entry({ autoRestart: false, loop: true }));
   await waitFor(() => restarted.restartCount > 0, "clean loop restart");
   await waitForState(restarted, "running");
@@ -242,7 +262,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 }
 
 {
-  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [failScript, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [failScript, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => []);
   const failed = await supervisor.start(entry({ autoRestart: false, loop: true }));
   await waitForState(failed, "failed");
   assert.equal(failed.restartCount, 0);
@@ -250,7 +270,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 }
 
 {
-  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [stubbornScript, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => undefined);
+  const supervisor = new PlayoutSupervisor({ ...baseSettings, smootherArgs: [stubbornScript, "-i", "{file}", "-o", "{target}"] }, new EventBus(), () => []);
   const stubborn = await supervisor.start(entry());
   await waitFor(() => stubborn.recentLogs.some((line) => line.includes("still running")), "stubborn startup");
   await supervisor.stop(stubborn.id);
