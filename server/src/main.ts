@@ -18,6 +18,7 @@ const library = new LibraryScanner(settings, events);
 const collections = new CollectionStore(settings, events);
 const playouts = new PlayoutSupervisor(settings, events, (id) => library.get(id));
 let shuttingDown = false;
+const startupOnBootDelayMs = 3000;
 
 async function shutdown(signal?: NodeJS.Signals): Promise<void> {
   if (shuttingDown) return;
@@ -59,6 +60,24 @@ const warnings = settingsStore.validateRuntime(settings);
 for (const warning of warnings) app.log.warn(warning);
 
 await app.listen({ port: settings.serverPort, host: "127.0.0.1" });
+
+setTimeout(() => {
+  void startBootCollections();
+}, startupOnBootDelayMs);
+
+async function startBootCollections(): Promise<void> {
+  if (shuttingDown) return;
+  const bootCollections = (await collections.list()).filter((collection) => collection.startupOnBoot);
+  for (const collection of bootCollections) {
+    try {
+      const started = await playouts.startCollection(collection);
+      events.emit("collection.startup_on_boot", `Started ${collection.name} on boot`, { name: collection.name, started: started.length });
+    } catch (error) {
+      app.log.error({ err: error, collection: collection.name }, "Startup on Boot collection failed");
+      events.emit("collection.startup_on_boot_failed", `Startup on Boot failed: ${collection.name}`, { name: collection.name, error: (error as Error).message });
+    }
+  }
+}
 
 process.once("SIGINT", (signal) => {
   void shutdown(signal).then(() => process.exit(0), (error) => {

@@ -150,6 +150,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
   const collection: Collection = {
     name: "Current Collection",
     description: "",
+    startupOnBoot: false,
     playouts: [collectionEntry],
     updatedAt: new Date().toISOString()
   };

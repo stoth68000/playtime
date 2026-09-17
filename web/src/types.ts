@@ -85,6 +85,7 @@ export interface CollectionPlayout {
 export interface Collection {
   name: string;
   description: string;
+  startupOnBoot: boolean;
   playouts: CollectionPlayout[];
   updatedAt: string;
 }

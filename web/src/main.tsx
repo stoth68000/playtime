@@ -9,7 +9,7 @@ import "./styles/app.css";
 
 type Page = "dashboard" | "library" | "collections" | "activity" | "settings";
 
-const emptyCollection = (): Collection => ({ name: "new-collection", description: "", updatedAt: new Date().toISOString(), playouts: [] });
+const emptyCollection = (): Collection => ({ name: "new-collection", description: "", startupOnBoot: false, updatedAt: new Date().toISOString(), playouts: [] });
 const newEntry = (file?: LibraryFile): CollectionPlayout => ({
   id: crypto.randomUUID(),
   label: file?.filename ?? "New playout",
@@ -115,7 +115,7 @@ function formatChannels(layout?: string, channels?: number): string | undefined 
 }
 
 function collectionComparable(collection: Collection): string {
-  return JSON.stringify({ name: collection.name, description: collection.description, playouts: collection.playouts });
+  return JSON.stringify({ name: collection.name, description: collection.description, startupOnBoot: collection.startupOnBoot, playouts: collection.playouts });
 }
 
 function validateEntry(entry: CollectionPlayout, files: LibraryFile[], entries: CollectionPlayout[]): string[] {
@@ -623,6 +623,9 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
           <button disabled={!validToStart} onClick={() => void startCollection(active)}><Play size={16} />Start</button>
           <button onClick={() => void stopCollection(active)}><Square size={16} />Stop</button>
           <button className="danger-button" disabled={!savedVersion} onClick={() => void deleteCollection()}><Trash2 size={16} /></button>
+        </div>
+        <div className="collection-options">
+          <label><input type="checkbox" checked={active.startupOnBoot} onChange={(e) => setActive({ ...active, startupOnBoot: e.target.checked })} />Startup on Boot</label>
         </div>
         <textarea value={active.description} onChange={(e) => setActive({ ...active, description: e.target.value })} placeholder="Description" />
         {collectionIssues.length > 0 && <div className="validation-strip">{collectionIssues.map((issue) => <span key={issue}>{issue}</span>)}</div>}

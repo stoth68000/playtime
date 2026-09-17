@@ -21,6 +21,7 @@ const playoutSchema = z.object({
 const collectionSchema = z.object({
   name: z.string().min(1),
   description: z.string().default(""),
+  startupOnBoot: z.boolean().default(false),
   playouts: z.array(playoutSchema).default([]),
   updatedAt: z.string().default(() => new Date().toISOString())
 });
