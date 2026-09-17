@@ -7,7 +7,9 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": "http://127.0.0.1:4500"
+      "/api": "http://127.0.0.1:4500",
+      "/docs": "http://127.0.0.1:4500",
+      "/openapi.json": "http://127.0.0.1:4500"
     }
   },
   build: {
