@@ -69,6 +69,10 @@ export async function ffprobeOutput(filePath: string, settings: Settings): Promi
   return stdout;
 }
 
+export async function mediaInfoOutput(filePath: string): Promise<string> {
+  const { stdout } = await execFileAsync("mediainfo", [filePath], { maxBuffer: 8 * 1024 * 1024, timeout: 30_000 });
+  return stdout;
+}
 
 function normalize(data: FfprobeOutput, filePath: string): FileMetadata {
   const streams = data.streams ?? [];

@@ -618,6 +618,22 @@ label input[type="checkbox"] {
   font-size: 12px;
 }
 
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tabs button {
+  min-height: 30px;
+  padding: 0 12px;
+}
+
+.tabs button.active {
+  background: #172232;
+  border-color: #3b526c;
+  color: #f8fbff;
+}
+
 .probe-output {
   margin: 0;
   min-height: 0;
