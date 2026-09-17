@@ -37,6 +37,11 @@ button:hover {
   background: #1d2530;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 input, select, textarea {
   width: 100%;
   border: 1px solid #293340;
@@ -300,6 +305,11 @@ h2 {
   margin-bottom: 8px;
 }
 
+.collection-button.active {
+  border-color: #3b526c;
+  background: #172232;
+}
+
 .collection-button span {
   color: #8c99a8;
   font-size: 12px;
@@ -317,9 +327,81 @@ h2 {
   border-radius: 8px;
   padding: 10px;
   display: grid;
-  grid-template-columns: 1.1fr 1.2fr minmax(220px, 1fr) 1.2fr auto auto auto;
+  gap: 10px;
+}
+
+.entry.invalid {
+  border-color: #74424a;
+}
+
+.entry-head {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) repeat(5, 34px);
   gap: 8px;
   align-items: center;
+}
+
+.entry-head button {
+  width: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+.entry-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(230px, 1fr) minmax(240px, 1fr) auto auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.source-button {
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.source-button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entry-meta, .entry-errors, .validation-strip {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.entry-meta span, .entry-errors span, .validation-strip span, .badge {
+  border: 1px solid #314052;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #aeb9c6;
+  background: #111923;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.entry-errors span, .validation-strip span, .badge.warn {
+  color: #ffd6a6;
+  background: #2d2112;
+  border-color: #6b5226;
+}
+
+.badge.ok {
+  color: #a8f1c8;
+  background: #102417;
+  border-color: #23593b;
+}
+
+.badge.index {
+  min-width: 28px;
+  text-align: center;
+  color: #dbeafe;
+  border-color: #33465d;
+}
+
+.validation-strip {
+  margin: 10px 0 12px;
 }
 
 label {
@@ -366,4 +448,72 @@ label input[type="checkbox"] {
 
 .settings-grid button {
   width: fit-content;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(3, 6, 10, 0.78);
+  display: grid;
+  place-items: center;
+  padding: 28px;
+}
+
+.modal {
+  width: min(1180px, 96vw);
+  max-height: 86vh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  border: 1px solid #344255;
+  background: #0f151c;
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+}
+
+.modal-head, .searchline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.modal-head {
+  justify-content: space-between;
+}
+
+.modal-head button {
+  width: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+.searchline {
+  border: 1px solid #293340;
+  background: #0d1117;
+  border-radius: 6px;
+  padding: 0 10px;
+}
+
+.searchline input {
+  border: 0;
+  background: transparent;
+}
+
+.picker-table {
+  overflow: auto;
+}
+
+.picker-table .row {
+  grid-template-columns: minmax(300px, 1.4fr) 80px 105px 80px minmax(160px, 1fr) minmax(190px, 1fr);
+}
+
+.picker-row {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  min-height: 50px;
+  text-align: left;
 }

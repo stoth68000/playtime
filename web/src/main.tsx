@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Activity, Database, FolderSync, Library, Play, RadioTower, RotateCw, Save, Settings as SettingsIcon, Square, Trash2 } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, Copy, Database, FolderSync, Library, ListPlus, Play, RadioTower, RotateCw, Save, Search, Settings as SettingsIcon, Square, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { api } from "./api/client";
 import type { ActivityEvent, Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings } from "./types";
@@ -56,6 +56,26 @@ function audioSummary(file: LibraryFile): string {
   const audio = file.metadata.audioStreams ?? [];
   if (!audio.length) return "-";
   return audio.map((stream) => [stream.pid, stream.codec, stream.channelLayout ?? (stream.channels ? `${stream.channels}ch` : undefined), stream.language].filter(Boolean).join(" ")).join(" / ");
+}
+
+function collectionComparable(collection: Collection): string {
+  return JSON.stringify({ name: collection.name, description: collection.description, playouts: collection.playouts });
+}
+
+function validateEntry(entry: CollectionPlayout, files: LibraryFile[], entries: CollectionPlayout[]): string[] {
+  const issues: string[] = [];
+  const target = entry.target.trim();
+  if (!entry.label.trim()) issues.push("Missing label");
+  if (!entry.fileId && !entry.filePath?.trim()) issues.push("Missing source");
+  if (entry.fileId && !files.some((file) => file.id === entry.fileId)) issues.push("Library file not found");
+  if (!/^(udp|srt):\/\/[^:/\s]+:\d+([/?#].*)?$/i.test(target)) issues.push("Invalid target");
+  if (entry.enabled && entries.some((other) => other.id !== entry.id && other.enabled && other.target.trim() === target)) issues.push("Duplicate target");
+  return issues;
+}
+
+function fileLabel(entry: CollectionPlayout, files: LibraryFile[]): string {
+  if (entry.fileId) return files.find((file) => file.id === entry.fileId)?.filename ?? "Missing library file";
+  return entry.filePath || "Manual file path";
 }
 
 function uptime(startedAt?: string): string {
@@ -214,39 +234,133 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
 
 function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; save: () => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
   const { collections, active, setActive, files, save, updateEntry, refresh } = props;
+  const [pickerEntryId, setPickerEntryId] = useState<string | null>(null);
+  const [pickerQuery, setPickerQuery] = useState("");
+  const savedVersion = collections.find((collection) => collection.name === active.name);
+  const dirty = !savedVersion || collectionComparable(savedVersion) !== collectionComparable(active);
+  const collectionIssues = active.playouts.flatMap((entry) => validateEntry(entry, files, active.playouts).map((issue) => `${entry.label || "Unnamed"}: ${issue}`));
+  const enabledIssues = active.playouts.filter((entry) => entry.enabled).flatMap((entry) => validateEntry(entry, files, active.playouts));
+  const validToStart = active.playouts.some((entry) => entry.enabled) && enabledIssues.length === 0;
+  const pickerFiles = files.filter((file) => {
+    const q = pickerQuery.toLowerCase();
+    return `${file.filename} ${file.path} ${file.metadata.codecs?.join(" ") ?? ""} ${file.metadata.serviceNames?.join(" ") ?? ""}`.toLowerCase().includes(q);
+  });
+  const chooseFile = (file: LibraryFile) => {
+    if (!pickerEntryId) return;
+    if (pickerEntryId === "new") {
+      setActive({ ...active, playouts: [...active.playouts, newEntry(file)] });
+    } else {
+      updateEntry(pickerEntryId, { fileId: file.id, filePath: undefined, label: file.filename });
+    }
+    setPickerEntryId(null);
+    setPickerQuery("");
+  };
+  const moveEntry = (id: string, direction: -1 | 1) => {
+    const index = active.playouts.findIndex((entry) => entry.id === id);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= active.playouts.length) return;
+    const next = [...active.playouts];
+    const [entry] = next.splice(index, 1);
+    next.splice(nextIndex, 0, entry);
+    setActive({ ...active, playouts: next });
+  };
+  const duplicateEntry = (entry: CollectionPlayout) => {
+    setActive({
+      ...active,
+      playouts: [...active.playouts, { ...entry, id: crypto.randomUUID(), label: `${entry.label} copy` }]
+    });
+  };
+  const deleteCollection = async () => {
+    if (!savedVersion) return;
+    if (!window.confirm(`Delete collection "${active.name}"?`)) return;
+    await api.deleteCollection(active.name);
+    setActive(emptyCollection());
+    await refresh();
+  };
   return (
     <div className="split">
       <section className="panel rail">
         <div className="panel-title"><h2>Saved</h2><button onClick={() => setActive(emptyCollection())}>New</button></div>
-        {collections.map((collection) => <button className="collection-button" key={collection.name} onClick={() => setActive(collection)}>{collection.name}<span>{collection.playouts.length} entries</span></button>)}
+        {collections.map((collection) => <button className={clsx("collection-button", { active: collection.name === active.name })} key={collection.name} onClick={() => setActive(collection)}>{collection.name}<span>{collection.playouts.length} entries</span></button>)}
       </section>
       <section className="panel">
         <div className="toolbar">
           <input value={active.name} onChange={(e) => setActive({ ...active, name: e.target.value })} />
-          <button className="primary" onClick={() => void save()}><Save size={16} />Save</button>
-          <button onClick={() => void api.startCollection(active.name).then(refresh)}><Play size={16} />Start</button>
+          <span className={clsx("badge", dirty ? "warn" : "ok")}>{dirty ? "Unsaved" : "Saved"}</span>
+          <button className="primary" disabled={collectionIssues.length > 0} onClick={() => void save()}><Save size={16} />Save</button>
+          <button disabled={!validToStart || dirty} onClick={() => void api.startCollection(active.name).then(refresh)}><Play size={16} />Start</button>
           <button onClick={() => void api.stopCollection(active.name).then(refresh)}><Square size={16} />Stop</button>
-          <button className="danger-button" onClick={() => void api.deleteCollection(active.name).then(refresh)}><Trash2 size={16} /></button>
+          <button className="danger-button" disabled={!savedVersion} onClick={() => void deleteCollection()}><Trash2 size={16} /></button>
         </div>
         <textarea value={active.description} onChange={(e) => setActive({ ...active, description: e.target.value })} placeholder="Description" />
-        <div className="toolbar"><button onClick={() => setActive({ ...active, playouts: [...active.playouts, newEntry(files[0])] })}>Add Playout</button></div>
+        {collectionIssues.length > 0 && <div className="validation-strip">{collectionIssues.map((issue) => <span key={issue}>{issue}</span>)}</div>}
+        <div className="toolbar">
+          <button onClick={() => setPickerEntryId("new")}><ListPlus size={16} />Add From Library</button>
+          <button onClick={() => setActive({ ...active, playouts: [...active.playouts, newEntry()] })}>Add Manual</button>
+        </div>
         <div className="entry-list">
-          {active.playouts.map((entry) => (
-            <div className="entry" key={entry.id}>
-              <input value={entry.label} onChange={(e) => updateEntry(entry.id, { label: e.target.value })} placeholder="Label" />
-              <select value={entry.fileId ?? ""} onChange={(e) => updateEntry(entry.id, { fileId: e.target.value, filePath: undefined })}>
-                <option value="">Manual file path</option>
-                {files.map((file) => <option key={file.id} value={file.id}>{file.filename}</option>)}
-              </select>
-              {!entry.fileId && <input value={entry.filePath ?? ""} onChange={(e) => updateEntry(entry.id, { filePath: e.target.value })} placeholder="/path/to/file.ts" />}
-              <input value={entry.target} onChange={(e) => updateEntry(entry.id, { target: e.target.value })} placeholder="udp://ip:port or srt://host:port" />
-              <label><input type="checkbox" checked={entry.enabled} onChange={(e) => updateEntry(entry.id, { enabled: e.target.checked })} />Enabled</label>
-              <label><input type="checkbox" checked={entry.autoRestart} onChange={(e) => updateEntry(entry.id, { autoRestart: e.target.checked })} />Auto restart</label>
-              <button onClick={() => setActive({ ...active, playouts: active.playouts.filter((p) => p.id !== entry.id) })}><Trash2 size={15} /></button>
+          {active.playouts.map((entry, index) => {
+            const issues = validateEntry(entry, files, active.playouts);
+            const selectedFile = entry.fileId ? files.find((file) => file.id === entry.fileId) : undefined;
+            return (
+            <div className={clsx("entry", { invalid: issues.length })} key={entry.id}>
+              <div className="entry-head">
+                <span className="badge index">{index + 1}</span>
+                <input value={entry.label} onChange={(e) => updateEntry(entry.id, { label: e.target.value })} placeholder="Label" />
+                <button title="Move up" disabled={index === 0} onClick={() => moveEntry(entry.id, -1)}><ArrowUp size={15} /></button>
+                <button title="Move down" disabled={index === active.playouts.length - 1} onClick={() => moveEntry(entry.id, 1)}><ArrowDown size={15} /></button>
+                <button title="Duplicate" onClick={() => duplicateEntry(entry)}><Copy size={15} /></button>
+                <button title="Start entry" disabled={issues.length > 0 || dirty} onClick={() => void api.startPlayout(entry).then(refresh)}><Play size={15} /></button>
+                <button title="Remove" onClick={() => setActive({ ...active, playouts: active.playouts.filter((p) => p.id !== entry.id) })}><Trash2 size={15} /></button>
+              </div>
+              <div className="entry-grid">
+                <button className="source-button" onClick={() => setPickerEntryId(entry.id)}>
+                  <Library size={15} />
+                  <span>{fileLabel(entry, files)}</span>
+                </button>
+                {!entry.fileId && <input value={entry.filePath ?? ""} onChange={(e) => updateEntry(entry.id, { filePath: e.target.value })} placeholder="/path/to/file.ts" />}
+                <input value={entry.target} onChange={(e) => updateEntry(entry.id, { target: e.target.value })} placeholder="udp://ip:port or srt://host:port" />
+                <label><input type="checkbox" checked={entry.enabled} onChange={(e) => updateEntry(entry.id, { enabled: e.target.checked })} />Enabled</label>
+                <label><input type="checkbox" checked={entry.loop} onChange={(e) => updateEntry(entry.id, { loop: e.target.checked })} />Loop</label>
+                <label><input type="checkbox" checked={entry.autoRestart} onChange={(e) => updateEntry(entry.id, { autoRestart: e.target.checked })} />Auto restart</label>
+              </div>
+              {selectedFile && <div className="entry-meta"><span>{formatDuration(selectedFile.metadata.duration)}</span><span>{formatBitrate(selectedFile.metadata.bitrate)}</span><span>{videoSummary(selectedFile)}</span><span>{audioSummary(selectedFile)}</span></div>}
+              {issues.length > 0 && <div className="entry-errors">{issues.map((issue) => <span key={issue}>{issue}</span>)}</div>}
             </div>
-          ))}
+            );
+          })}
+          {!active.playouts.length && <div className="empty">No playout entries yet.</div>}
         </div>
       </section>
+      {pickerEntryId && <FilePicker files={pickerFiles} query={pickerQuery} setQuery={setPickerQuery} choose={chooseFile} close={() => setPickerEntryId(null)} />}
+    </div>
+  );
+}
+
+function FilePicker({ files, query, setQuery, choose, close }: { files: LibraryFile[]; query: string; setQuery: (value: string) => void; choose: (file: LibraryFile) => void; close: () => void }) {
+  return (
+    <div className="modal-backdrop">
+      <div className="modal">
+        <div className="modal-head">
+          <h2>Select Library File</h2>
+          <button title="Close" onClick={close}><X size={16} /></button>
+        </div>
+        <div className="searchline"><Search size={16} /><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search filename, path, codec, service" /></div>
+        <div className="table picker-table">
+          <div className="row head"><span>File</span><span>Duration</span><span>Bitrate</span><span>Programs</span><span>Video</span><span>Audio</span></div>
+          {files.map((file) => (
+            <button className="row picker-row" key={file.id} onClick={() => choose(file)}>
+              <span className="truncate"><strong>{file.filename}</strong><small>{file.path}</small></span>
+              <span>{formatDuration(file.metadata.duration)}</span>
+              <span>{formatBitrate(file.metadata.bitrate)}</span>
+              <span>{file.metadata.programCount ?? "-"}</span>
+              <span className="truncate">{videoSummary(file)}</span>
+              <span className="truncate">{audioSummary(file)}</span>
+            </button>
+          ))}
+          {!files.length && <div className="empty">No matching files.</div>}
+        </div>
+      </div>
     </div>
   );
 }
