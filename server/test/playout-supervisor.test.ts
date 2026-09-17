@@ -149,6 +149,17 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
   await waitForState(failed, "failed");
   assert.match(failed.failureReason ?? "", /Exited with code 7/);
   assert.ok(failed.recentLogs.some((line) => line.includes("intentional failure")));
+  assert.equal(supervisor.delete(failed.id).id, failed.id);
+  assert.equal(supervisor.list().length, 0);
+}
+
+{
+  const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => undefined);
+  const started = await supervisor.start(entry());
+  assert.throws(() => supervisor.delete(started.id), /completed playout/);
+  await supervisor.stop(started.id);
+  await waitForState(started, "exited");
+  supervisor.clearCompleted();
 }
 
 {

@@ -62,6 +62,7 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
     if (!playout) return reply.code(404).send({ error: "Playout not found" });
     return playout;
   });
+  app.delete<{ Params: { id: string } }>("/api/playouts/:id", async (request) => services.playouts.delete(request.params.id));
   app.post<{ Params: { id: string } }>("/api/playouts/:id/stop", async (request) => services.playouts.stop(request.params.id));
   app.post<{ Params: { id: string } }>("/api/playouts/:id/restart", async (request) => services.playouts.restart(request.params.id));
 

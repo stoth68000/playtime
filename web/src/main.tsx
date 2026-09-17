@@ -125,7 +125,7 @@ function App() {
     void refresh().catch((err) => setError(err.message));
     const events = new EventSource("/api/events");
     events.onmessage = () => void refresh();
-    ["playout.started", "playout.exited", "playout.failed", "playout.log", "library.scan.completed", "collection.saved", "collection.deleted", "settings.updated"].forEach((name) => {
+    ["playout.started", "playout.exited", "playout.failed", "playout.deleted", "playout.log", "library.scan.completed", "collection.saved", "collection.deleted", "settings.updated"].forEach((name) => {
       events.addEventListener(name, () => void refresh());
     });
     const timer = window.setInterval(() => void api.playouts().then(setPlayouts), 1500);
@@ -191,6 +191,20 @@ function App() {
     }
   };
 
+  const deletePlayout = async (id: string) => {
+    setError("");
+    const previousPlayouts = playouts;
+    setPlayouts((current) => current.filter((playout) => playout.id !== id));
+    try {
+      await api.deletePlayout(id);
+      await refresh();
+    } catch (err) {
+      setPlayouts(previousPlayouts);
+      setError(`Delete failed: ${(err as Error).message}`);
+      throw err;
+    }
+  };
+
   const updateEntry = (id: string, patch: Partial<CollectionPlayout>) => {
     setActiveCollection((collection) => ({
       ...collection,
@@ -224,7 +238,7 @@ function App() {
         </header>
         {error && <div className="alert danger">{error}</div>}
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
-        {page === "dashboard" && <Dashboard playouts={playouts} onStop={(id) => api.stopPlayout(id).then(refresh)} onRestart={(id) => api.restartPlayout(id).then(refresh)} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: true, autoRestart: false, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
+        {page === "dashboard" && <Dashboard playouts={playouts} onStop={(id) => api.stopPlayout(id).then(refresh)} onRestart={(id) => api.restartPlayout(id).then(refresh)} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: true, autoRestart: false, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
         {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "activity" && <ActivityPage activity={activity} />}
@@ -234,7 +248,7 @@ function App() {
   );
 }
 
-function Dashboard({ playouts, onStop, onRestart, onStartAgain, onClearCompleted }: { playouts: PlayoutInstance[]; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown>; onStartAgain: (playout: PlayoutInstance) => Promise<unknown>; onClearCompleted: () => Promise<unknown> }) {
+function Dashboard({ playouts, onStop, onRestart, onDelete, onStartAgain, onClearCompleted }: { playouts: PlayoutInstance[]; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown>; onDelete: (id: string) => Promise<unknown>; onStartAgain: (playout: PlayoutInstance) => Promise<unknown>; onClearCompleted: () => Promise<unknown> }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "failed" | "complete">("all");
   const selected = playouts.find((playout) => playout.id === selectedId) ?? null;
@@ -269,6 +283,7 @@ function Dashboard({ playouts, onStop, onRestart, onStartAgain, onClearCompleted
             <span className="actions">
               <button title="Restart" onClick={(event) => { event.stopPropagation(); void onRestart(p.id); }}><RotateCw size={15} /></button>
               <button title="Stop" disabled={!["starting", "running", "restarting"].includes(p.state)} onClick={(event) => { event.stopPropagation(); void onStop(p.id); }}><Square size={15} /></button>
+              {p.state === "failed" && <button title="Delete failed record" className="danger-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void onDelete(p.id); }}><Trash2 size={15} /></button>}
             </span>
           </div>
         ))}
