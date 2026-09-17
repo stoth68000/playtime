@@ -326,6 +326,17 @@ h2 {
   font-size: 12px;
 }
 
+.library-table .video-summary-cell {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.library-table .video-summary-cell small {
+  color: #8a97a8;
+  font-size: 11px;
+}
+
 .row.head {
   min-height: 36px;
   color: #94a1b0;

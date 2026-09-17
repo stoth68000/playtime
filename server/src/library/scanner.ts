@@ -80,7 +80,8 @@ export class LibraryScanner {
         const id = crypto.createHash("sha1").update(fullPath).digest("hex").slice(0, 16);
         const cached = this.files.get(id);
         const cachedHasThumbnail = !cached?.metadata.videoStreams?.length || Boolean(cached.metadata.thumbnailPath && existsSync(resolveAppPath(cached.metadata.thumbnailPath)));
-        const unchanged = cached?.size === stat.size && cached.modifiedAt === stat.mtime.toISOString() && cached.metadataStatus === "probed" && cachedHasThumbnail;
+        const cachedHasTransportType = Boolean(cached?.metadata.transportType);
+        const unchanged = cached?.size === stat.size && cached.modifiedAt === stat.mtime.toISOString() && cached.metadataStatus === "probed" && cachedHasThumbnail && cachedHasTransportType;
         output.push({
           id,
           path: fullPath,

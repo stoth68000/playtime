@@ -74,6 +74,7 @@ function normalize(data: FfprobeOutput, filePath: string): FileMetadata {
   const packetSize = firstNumber(streams.map((stream) => stream.ts_packetsize));
   const codecs = unique(streams.map((stream) => stream.codec_name).filter(Boolean) as string[]);
   const serviceNames = unique(programs.map((program) => program.serviceName).filter(Boolean) as string[]);
+  const programCount = data.format?.nb_programs ?? programs.length;
 
   return {
     duration: parseNumber(data.format?.duration),
@@ -81,7 +82,8 @@ function normalize(data: FfprobeOutput, filePath: string): FileMetadata {
     packetSize,
     formatName: data.format?.format_name,
     probeScore: data.format?.probe_score,
-    programCount: data.format?.nb_programs ?? programs.length,
+    programCount,
+    transportType: programCount > 1 ? "MPTS" : "SPTS",
     programs,
     videoStreams,
     audioStreams,

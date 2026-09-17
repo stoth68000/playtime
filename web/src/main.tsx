@@ -54,6 +54,10 @@ function videoSummary(file: LibraryFile): string {
   return [size, rate, codec ? `(${codec})` : undefined].filter(Boolean).join(" ");
 }
 
+function transportTypeSummary(file: LibraryFile): string {
+  return file.metadata.transportType ?? "-";
+}
+
 function formatFrameRate(value?: string): string | undefined {
   if (!value) return undefined;
   const [numerator, denominator] = value.split("/").map(Number);
@@ -437,6 +441,7 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
         <div className="row head"><span>Preview</span><span>File</span><span>Duration</span><span>Bitrate</span><span>Video</span><span>Audio</span><span></span></div>
         {files.map((file) => {
           const video = videoSummary(file);
+          const transportType = transportTypeSummary(file);
           const audio = audioSummary(file);
           return (
           <div className="row" key={file.id}>
@@ -444,7 +449,10 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
             <span className="truncate" title={`${file.filename}\n${file.path}`}><strong>{file.filename}</strong><small>{file.path}</small></span>
             <span>{formatDuration(file.metadata.duration)}</span>
             <span>{formatBitrate(file.metadata.bitrate)}</span>
-            <span className="truncate media-summary-cell" title={video}>{video}</span>
+            <span className="video-summary-cell" title={`${video}\n${transportType}`}>
+              <span className="truncate media-summary-cell">{video}</span>
+              <small>{transportType}</small>
+            </span>
             <span className="truncate media-summary-cell" title={audio}>{audio}</span>
             <span><button onClick={() => addFile(file)}>Add</button></span>
           </div>

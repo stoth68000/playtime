@@ -32,6 +32,7 @@ export interface FileMetadata {
   formatName?: string;
   probeScore?: number;
   programCount?: number;
+  transportType?: "SPTS" | "MPTS";
   programs?: ProgramMetadata[];
   videoStreams?: StreamMetadata[];
   audioStreams?: StreamMetadata[];
