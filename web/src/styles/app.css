@@ -230,7 +230,7 @@ h2 {
 }
 
 .library-table .row {
-  grid-template-columns: 78px minmax(340px, 1.5fr) 80px 105px minmax(200px, 1fr) minmax(210px, 1fr) 70px;
+  grid-template-columns: 78px minmax(442px, 1.95fr) 80px 105px minmax(170px, 0.85fr) minmax(180px, 0.85fr) 70px;
   min-height: 66px;
 }
 
