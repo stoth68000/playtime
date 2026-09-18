@@ -65,7 +65,7 @@ if (existsSync(webDist)) {
 const warnings = settingsStore.validateRuntime(settings);
 for (const warning of warnings) app.log.warn(warning);
 
-await app.listen({ port: settings.serverPort, host: "127.0.0.1" });
+await app.listen({ port: settings.serverPort, host: "0.0.0.0" });
 
 setTimeout(() => {
   void startBootCollections();
