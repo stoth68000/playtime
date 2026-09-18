@@ -772,7 +772,7 @@
     "schemas": {
       "Health": {
         "type": "object",
-        "required": ["ok", "warnings"],
+        "required": ["ok", "warnings", "gitVersion"],
         "properties": {
           "ok": {
             "type": "boolean"
@@ -782,6 +782,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "gitVersion": {
+            "type": "string"
           }
         }
       },

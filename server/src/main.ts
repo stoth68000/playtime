@@ -10,6 +10,7 @@ import { CollectionStore } from "./collections/store.js";
 import { PlayoutSupervisor } from "./playout/supervisor.js";
 import { registerRoutes } from "./api/routes.js";
 import { TrafficMonitor } from "./traffic/monitor.js";
+import { gitVersion } from "./util/version.js";
 
 const app = Fastify({ logger: true });
 const settingsStore = new SettingsStore();
@@ -19,6 +20,7 @@ const library = new LibraryScanner(settings, events);
 const collections = new CollectionStore(settings, events);
 const playouts = new PlayoutSupervisor(settings, events, () => library.list());
 const traffic = new TrafficMonitor();
+const version = await gitVersion();
 let shuttingDown = false;
 const startupOnBootDelayMs = 3000;
 
@@ -40,6 +42,7 @@ await app.register(cors, { origin: true });
 await registerRoutes(app, {
   settingsStore,
   getSettings: () => settings,
+  gitVersion: version,
   setSettings: (next) => {
     settings = next;
   },

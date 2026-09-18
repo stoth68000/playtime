@@ -125,6 +125,12 @@ nav button.active {
   font-weight: 800;
 }
 
+.git-version {
+  color: #667386;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
 main {
   padding: 22px;
   overflow: auto;

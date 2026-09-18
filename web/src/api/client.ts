@@ -11,7 +11,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  health: () => request<{ ok: boolean; warnings: string[] }>("/api/health"),
+  health: () => request<{ ok: boolean; warnings: string[]; gitVersion: string }>("/api/health"),
   traffic: () => request<TrafficInterface[]>("/api/traffic/interfaces"),
   settings: () => request<Settings>("/api/settings"),
   saveSettings: (settings: Settings) => request<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(settings) }),

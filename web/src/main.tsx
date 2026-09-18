@@ -238,6 +238,7 @@ function App() {
   const [activeCollection, setActiveCollection] = useState<Collection>(emptyCollection());
   const [playouts, setPlayouts] = useState<PlayoutInstance[]>([]);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
+  const [gitVersion, setGitVersion] = useState("");
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const configuredDefaultUdpAddress = settings?.defaultUdpAddress ?? defaultUdpAddress;
@@ -252,6 +253,7 @@ function App() {
       api.activity()
     ]);
     setWarnings(health.warnings);
+    setGitVersion(health.gitVersion);
     setSettings(nextSettings);
     setFiles(nextFiles);
     setCollections(nextCollections);
@@ -406,6 +408,7 @@ function App() {
         <div className="status-block">
           <span className="metric">{playouts.filter((p) => p.state === "running").length}</span>
           <span>running playouts</span>
+          <span className="git-version">GIT: {gitVersion || "unknown"}</span>
         </div>
       </aside>
       <main>

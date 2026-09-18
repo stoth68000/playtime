@@ -14,6 +14,7 @@ export interface AppServices {
   settingsStore: SettingsStore;
   getSettings: () => Settings;
   setSettings: (settings: Settings) => void;
+  gitVersion: string;
   library: LibraryScanner;
   collections: CollectionStore;
   playouts: PlayoutSupervisor;
@@ -184,7 +185,7 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
     return reply.type("application/json").send(spec);
   });
 
-  app.get("/api/health", async () => ({ ok: true, warnings: services.settingsStore.validateRuntime(services.getSettings()) }));
+  app.get("/api/health", async () => ({ ok: true, warnings: services.settingsStore.validateRuntime(services.getSettings()), gitVersion: services.gitVersion }));
   app.get("/api/traffic/interfaces", async () => services.traffic.interfaces());
   app.get("/api/settings", async () => services.getSettings());
   app.put<{ Body: Settings }>("/api/settings", async (request) => {
