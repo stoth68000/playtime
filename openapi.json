@@ -792,6 +792,7 @@
         "type": "object",
         "required": [
           "serverPort",
+          "requestLogging",
           "libraryPaths",
           "smootherCommand",
           "smootherArgs",
@@ -811,6 +812,11 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 65535
+          },
+          "requestLogging": {
+            "type": "boolean",
+            "default": true,
+            "description": "Controls Fastify per-request console logging. Changes take effect after server restart."
           },
           "libraryPaths": {
             "type": "array",

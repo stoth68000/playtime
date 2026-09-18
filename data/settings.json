@@ -1,5 +1,6 @@
 {
   "serverPort": 4500,
+  "requestLogging": false,
   "libraryPaths": [
     "./samples"
   ],

@@ -2,6 +2,7 @@ export type PlayoutState = "starting" | "running" | "stopping" | "exited" | "fai
 
 export interface Settings {
   serverPort: number;
+  requestLogging: boolean;
   libraryPaths: string[];
   smootherCommand: string;
   smootherArgs: string[];

@@ -7,6 +7,7 @@ import { resolveAppPath } from "../util/paths.js";
 
 const settingsSchema = z.object({
   serverPort: z.number().int().min(1).max(65535).default(4500),
+  requestLogging: z.boolean().default(true),
   libraryPaths: z.array(z.string()).default(["./samples"]),
   smootherCommand: z.string().default(defaultToolCommands().smootherCommand),
   smootherArgs: z.array(z.string()).default(["--input", "{file}", "--output", "{target}"]),

@@ -974,6 +974,7 @@ function SettingsPage({ settings, setSettings, save }: { settings: Settings; set
       <label>Cache dir<input value={settings.cacheDir} onChange={(e) => setSettings({ ...settings, cacheDir: e.target.value })} /></label>
       <label>Logs dir<input value={settings.logsDir} onChange={(e) => setSettings({ ...settings, logsDir: e.target.value })} /></label>
       <label>Default UDP address<input value={settings.defaultUdpAddress} onChange={(e) => setSettings({ ...settings, defaultUdpAddress: e.target.value })} placeholder="227.1.1.1:4001" /></label>
+      <label><input type="checkbox" checked={settings.requestLogging} onChange={(e) => setSettings({ ...settings, requestLogging: e.target.checked })} />REST request logging</label>
       <button className="primary" onClick={() => void save(next)}>Save Settings</button>
     </section>
   );
