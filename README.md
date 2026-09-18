@@ -52,6 +52,7 @@ PlayTime probes MPEG-TS files with the bundled static `ffprobe` by default:
 ```json
 "metadataProbeCommand": "./bin/ffprobe",
 "metadataProbeArgs": ["-v", "error", "-show_format", "-show_streams", "-show_programs", "-of", "json", "{file}"],
+"ffmpegCommand": "./bin/ffmpeg",
 "mediaInfoCommand": "./bin/mediainfo"
 ```
 

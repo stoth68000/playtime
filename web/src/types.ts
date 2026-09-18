@@ -7,6 +7,7 @@ export interface Settings {
   smootherArgs: string[];
   metadataProbeCommand: string;
   metadataProbeArgs: string[];
+  ffmpegCommand: string;
   mediaInfoCommand: string;
   collectionsDir: string;
   cacheDir: string;

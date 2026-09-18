@@ -12,6 +12,7 @@ const settingsSchema = z.object({
   smootherArgs: z.array(z.string()).default(["--input", "{file}", "--output", "{target}"]),
   metadataProbeCommand: z.string().default("./bin/ffprobe"),
   metadataProbeArgs: z.array(z.string()).default(["-v", "error", "-show_format", "-show_streams", "-show_programs", "-of", "json", "{file}"]),
+  ffmpegCommand: z.string().default("./bin/ffmpeg"),
   mediaInfoCommand: z.string().default("./bin/mediainfo"),
   collectionsDir: z.string().default("./data/collections"),
   cacheDir: z.string().default("./data/cache"),
@@ -53,6 +54,10 @@ export class SettingsStore {
     if (settings.metadataProbeCommand.includes("/") && !existsSync(probeCommandPath)) {
       warnings.push(`Metadata probe command not found: ${settings.metadataProbeCommand}`);
     }
+    const ffmpegCommandPath = resolveAppPath(settings.ffmpegCommand);
+    if (settings.ffmpegCommand.includes("/") && !existsSync(ffmpegCommandPath)) {
+      warnings.push(`FFmpeg command not found: ${settings.ffmpegCommand}`);
+    }
     const mediaInfoCommandPath = resolveAppPath(settings.mediaInfoCommand);
     if (settings.mediaInfoCommand.includes("/") && !existsSync(mediaInfoCommandPath)) {
       warnings.push(`MediaInfo command not found: ${settings.mediaInfoCommand}`);
@@ -68,6 +73,7 @@ export class SettingsStore {
     return {
       ...settings,
       metadataProbeCommand: this.preferBundledTool(settings.metadataProbeCommand, "ffprobe"),
+      ffmpegCommand: this.preferBundledTool(settings.ffmpegCommand, "ffmpeg"),
       mediaInfoCommand: this.preferBundledTool(settings.mediaInfoCommand, "mediainfo")
     };
   }

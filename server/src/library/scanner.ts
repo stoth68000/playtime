@@ -157,7 +157,7 @@ export class LibraryScanner {
     const thumbnailPath = this.thumbnailCachePath(id);
     await ensureDir(path.dirname(thumbnailPath));
     try {
-      await execFileAsync(this.ffmpegCommand(), [
+      await execFileAsync(this.mediaCommand(this.settings.ffmpegCommand), [
         "-y",
         "-v", "error",
         "-i", filePath,
@@ -182,9 +182,7 @@ export class LibraryScanner {
     return resolveAppPath(cached.metadata.thumbnailPath) === expectedPath && existsSync(expectedPath);
   }
 
-  private ffmpegCommand(): string {
-    const probeCommand = this.settings.metadataProbeCommand;
-    if (probeCommand.endsWith("ffprobe")) return `${probeCommand.slice(0, -"ffprobe".length)}ffmpeg`;
-    return "ffmpeg";
+  private mediaCommand(command: string): string {
+    return command.includes("/") ? resolveAppPath(command) : command;
   }
 }

@@ -797,6 +797,7 @@
           "smootherArgs",
           "metadataProbeCommand",
           "metadataProbeArgs",
+          "ffmpegCommand",
           "mediaInfoCommand",
           "collectionsDir",
           "cacheDir",
@@ -834,6 +835,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "ffmpegCommand": {
+            "type": "string"
           },
           "mediaInfoCommand": {
             "type": "string"

@@ -27,6 +27,7 @@ const settings: Settings = {
   smootherArgs: ["-i", "{file}", "-o", "{target}"],
   metadataProbeCommand: "missing-ffprobe",
   metadataProbeArgs: ["{file}"],
+  ffmpegCommand: "missing-ffmpeg",
   mediaInfoCommand: "missing-mediainfo",
   collectionsDir: path.join(root, "collections"),
   cacheDir: path.join(root, "cache"),
