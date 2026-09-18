@@ -38,6 +38,13 @@ For the bundled `tstools_bitrate_smoother` binary, use the real playout template
 "smootherArgs": ["-i", "{file}", "-o", "{target}", "-l", "500"]
 ```
 
+Collection playout targets can be UDP multicast/unicast or SRT caller-mode outputs:
+
+```text
+udp://227.1.1.1:4001
+srt://remotehost:port?latency=2000000
+```
+
 ## Metadata
 
 PlayTime probes MPEG-TS files with the bundled static `ffprobe` by default:
