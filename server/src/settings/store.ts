@@ -97,7 +97,7 @@ interface ToolCommands {
 function defaultToolCommands(platform = process.platform): ToolCommands {
   if (platform === "linux") {
     return {
-      smootherCommand: "tstools_bitrate_smoother",
+      smootherCommand: "/usr/local/bin/tstools_bitrate_smoother",
       metadataProbeCommand: "./bin/ffprobe-linux",
       ffmpegCommand: "./bin/ffmpeg-linux",
       mediaInfoCommand: "./bin/mediainfo-linux"

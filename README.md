@@ -38,7 +38,7 @@ For the bundled `tstools_bitrate_smoother` binary on macOS, use the real playout
 "smootherArgs": ["-i", "{file}", "-o", "{target}", "-l", "500"]
 ```
 
-On macOS, PlayTime defaults to `./bin/ffmpeg`, `./bin/ffprobe`, `./bin/mediainfo`, and `./bin/tstools_bitrate_smoother`. On Linux, it defaults to `./bin/ffmpeg-linux`, `./bin/ffprobe-linux`, `./bin/mediainfo-linux`, and the system `tstools_bitrate_smoother`.
+On macOS, PlayTime defaults to `./bin/ffmpeg`, `./bin/ffprobe`, `./bin/mediainfo`, and `./bin/tstools_bitrate_smoother`. On Linux, it defaults to `./bin/ffmpeg-linux`, `./bin/ffprobe-linux`, `./bin/mediainfo-linux`, and `/usr/local/bin/tstools_bitrate_smoother`.
 
 Collection playout targets can be UDP multicast/unicast or SRT caller-mode outputs:
 
