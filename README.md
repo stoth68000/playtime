@@ -26,7 +26,7 @@ http://127.0.0.1:4500
 Swagger/OpenAPI documentation is available at:
 
 ```text
-http://127.0.0.1:4500/docs
+http://127.0.0.1:5173/docs
 ```
 
 Edit `data/settings.json` to point `libraryPaths` at your MPEG-TS library and adjust `smootherArgs` to match your `tstools_bitrate_smoother` command-line contract.
