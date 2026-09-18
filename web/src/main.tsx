@@ -366,6 +366,7 @@ function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain,
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "failed" | "complete">("all");
   const selected = playouts.find((playout) => playout.id === selectedId) ?? null;
+  const selectedFile = selected ? files.find((item) => item.path === selected.filePath) : undefined;
   const visible = playouts.filter((playout) => {
     if (filter === "active") return ["starting", "running", "restarting", "stopping"].includes(playout.state);
     if (filter === "failed") return playout.state === "failed";
@@ -412,14 +413,15 @@ function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain,
         {!visible.length && <div className="empty">No playouts match this view.</div>}
       </div>
     </section>
-    {selected && <PlayoutDrawer playout={selected} close={() => setSelectedId(null)} onStop={onStop} onRestart={onRestart} onStartAgain={onStartAgain} />}
+    {selected && <PlayoutDrawer playout={selected} file={selectedFile} close={() => setSelectedId(null)} onStop={onStop} onRestart={onRestart} onStartAgain={onStartAgain} />}
     </>
   );
 }
 
-function PlayoutDrawer({ playout, close, onStop, onRestart, onStartAgain }: { playout: PlayoutInstance; close: () => void; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown>; onStartAgain: (playout: PlayoutInstance) => Promise<unknown> }) {
+function PlayoutDrawer({ playout, file, close, onStop, onRestart, onStartAgain }: { playout: PlayoutInstance; file?: LibraryFile; close: () => void; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown>; onStartAgain: (playout: PlayoutInstance) => Promise<unknown> }) {
   const commandLine = playout.command.map((part) => (/\s/.test(part) ? JSON.stringify(part) : part)).join(" ");
   const active = ["starting", "running", "restarting"].includes(playout.state);
+  const comment = file?.sidecar?.comment;
   const copyCommand = () => void navigator.clipboard?.writeText(commandLine);
   return (
     <aside className="drawer">
@@ -439,6 +441,7 @@ function PlayoutDrawer({ playout, close, onStop, onRestart, onStartAgain }: { pl
         <Detail label="Exit" value={playout.exitCode !== undefined ? `${playout.exitCode ?? "signal"}${playout.signal ? ` ${playout.signal}` : ""}` : "-"} />
         <Detail label="Restarts" value={playout.restartCount.toString()} />
         <Detail label="Source" value={playout.filePath} wide />
+        <Detail label="Comment" value={comment || "-"} wide />
         <Detail label="Target" value={playout.target} wide />
         <Detail label="Log file" value={playout.logPath ?? "-"} wide />
       </div>
