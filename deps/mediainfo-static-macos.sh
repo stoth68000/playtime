@@ -1,7 +1,7 @@
 #!/bin/bash
 
-brew install cmake ninja
-
+# MacOs:
+# brew install cmake ninja
 cd tmp
 
 git clone https://github.com/MediaArea/MediaInfo.git
@@ -23,5 +23,3 @@ cmake \
 cmake --build build-arm64 --parallel "$(sysctl -n hw.logicalcpu)"
 
 cp ./build-arm64/mediainfo ..
-
-cd ..
