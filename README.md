@@ -23,6 +23,12 @@ The API runs on:
 http://127.0.0.1:4500
 ```
 
+Swagger/OpenAPI documentation is available at:
+
+```text
+http://127.0.0.1:4500/docs
+```
+
 Edit `data/settings.json` to point `libraryPaths` at your MPEG-TS library and adjust `smootherArgs` to match your `tstools_bitrate_smoother` command-line contract.
 
 For the bundled `tstools_bitrate_smoother` binary, use the real playout template in `data/settings.real-smoother.example.json`:
