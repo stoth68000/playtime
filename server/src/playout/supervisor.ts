@@ -202,18 +202,16 @@ export class PlayoutSupervisor {
   }
 
   renderCommand(file: string, target: string): string[] {
-    const quotedFile = singleQuote(file);
-    const quotedTarget = singleQuote(target);
     return [
       resolveAppPath(this.settings.smootherCommand),
-      ...this.settings.smootherArgs.map((arg) => arg.replaceAll("{file}", quotedFile).replaceAll("{target}", quotedTarget))
+      ...this.settings.smootherArgs.map((arg) => arg.replaceAll("{file}", file).replaceAll("{target}", target))
     ];
   }
 
   validateCommand(command: string[], file: string, target: string): void {
     if (!command[0]) throw new Error("Smoother command is empty");
-    if (!command.some((part) => part.includes(file))) throw new Error("Rendered smoother command does not include the source file");
-    if (!command.some((part) => part.includes(target))) throw new Error("Rendered smoother command does not include the target URL");
+    if (!command.includes(file)) throw new Error("Rendered smoother command does not include the source file");
+    if (!command.includes(target)) throw new Error("Rendered smoother command does not include the target URL");
     const unresolved = command.find((part) => part.includes("{file}") || part.includes("{target}"));
     if (unresolved) throw new Error(`Rendered smoother command has unresolved template token: ${unresolved}`);
   }
@@ -311,8 +309,4 @@ export class PlayoutSupervisor {
     clearTimeout(timer);
     this.restartTimers.delete(id);
   }
-}
-
-function singleQuote(value: string): string {
-  return `'${value.replaceAll("'", "'\\''")}'`;
 }

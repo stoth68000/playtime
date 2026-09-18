@@ -127,7 +127,7 @@ async function waitForState(instance: PlayoutInstance, state: PlayoutInstance["s
 {
   const supervisor = new PlayoutSupervisor(baseSettings, new EventBus(), () => []);
   const command = supervisor.renderCommand(source, "udp://239.1.1.1:5000");
-  assert.deepEqual(command, [process.execPath, okScript, "-i", `'${source}'`, "-o", "'udp://239.1.1.1:5000'"]);
+  assert.deepEqual(command, [process.execPath, okScript, "-i", source, "-o", "udp://239.1.1.1:5000"]);
   assert.throws(() => supervisor.validateCommand([process.execPath, okScript, "-i", source], source, "udp://239.1.1.1:5000"), /target URL/);
 }
 

@@ -229,6 +229,10 @@ function uptime(startedAt?: string): string {
   return h ? `${h}h ${m}m` : `${m}m ${s}s`;
 }
 
+function shellQuote(value: string): string {
+  return /^[A-Za-z0-9_/:=.,+-]+$/.test(value) ? value : `'${value.replaceAll("'", "'\\''")}'`;
+}
+
 function App() {
   const [page, setPage] = useState<Page>("dashboard");
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -489,7 +493,7 @@ function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain,
 }
 
 function PlayoutDrawer({ playout, file, close, onStop, onRestart, onStartAgain }: { playout: PlayoutInstance; file?: LibraryFile; close: () => void; onStop: (id: string) => Promise<unknown>; onRestart: (id: string) => Promise<unknown>; onStartAgain: (playout: PlayoutInstance) => Promise<unknown> }) {
-  const commandLine = playout.command.map((part) => (/\s/.test(part) ? JSON.stringify(part) : part)).join(" ");
+  const commandLine = playout.command.map(shellQuote).join(" ");
   const active = ["starting", "running", "restarting"].includes(playout.state);
   const comment = file?.sidecar?.comment;
   const copyCommand = () => void navigator.clipboard?.writeText(commandLine);
