@@ -598,7 +598,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   const validToStart = active.playouts.some((entry) => entry.enabled) && enabledIssues.length === 0;
   const pickerFiles = files.filter((file) => {
     const q = pickerQuery.toLowerCase();
-    return `${file.filename} ${file.path} ${file.metadata.codecs?.join(" ") ?? ""} ${file.metadata.serviceNames?.join(" ") ?? ""}`.toLowerCase().includes(q);
+    return `${file.filename} ${file.path} ${file.sidecar?.comment ?? ""} ${file.metadata.codecs?.join(" ") ?? ""} ${file.metadata.serviceNames?.join(" ") ?? ""}`.toLowerCase().includes(q);
   });
   const chooseFile = (file: LibraryFile) => {
     if (!pickerEntryId) return;
