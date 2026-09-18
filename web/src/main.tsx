@@ -675,7 +675,7 @@ function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: 
   );
 }
 
-function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; playouts: PlayoutInstance[]; defaultUdpAddress: string; save: () => Promise<void>; startCollection: (collection: Collection) => Promise<void>; stopCollection: (collection: Collection) => Promise<void>; deleteCollection: (name: string) => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
+function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: React.Dispatch<React.SetStateAction<Collection>>; files: LibraryFile[]; playouts: PlayoutInstance[]; defaultUdpAddress: string; save: () => Promise<void>; startCollection: (collection: Collection) => Promise<void>; stopCollection: (collection: Collection) => Promise<void>; deleteCollection: (name: string) => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
   const { collections, active, setActive, files, playouts, defaultUdpAddress, save, startCollection, stopCollection, deleteCollection: removeCollection, updateEntry, refresh } = props;
   const [pickerEntryId, setPickerEntryId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -694,13 +694,14 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   });
   const chooseFile = (file: LibraryFile) => {
     if (!pickerEntryId) return;
-    if (pickerEntryId === "new") {
-      setActive({ ...active, playouts: [...active.playouts, newEntry(file, nextCollectionTarget(active.playouts, defaultUdpAddress))] });
-    } else {
-      updateEntry(pickerEntryId, { fileId: file.id, filePath: file.path, label: file.filename });
-    }
+    const entryId = pickerEntryId;
     setPickerEntryId(null);
     setPickerQuery("");
+    if (entryId === "new") {
+      setActive((current) => ({ ...current, playouts: [...current.playouts, newEntry(file, nextCollectionTarget(current.playouts, defaultUdpAddress))] }));
+    } else {
+      updateEntry(entryId, { fileId: file.id, filePath: file.path, label: file.filename });
+    }
   };
   const moveEntry = (id: string, direction: -1 | 1) => {
     const index = active.playouts.findIndex((entry) => entry.id === id);
@@ -839,7 +840,7 @@ function FilePicker({ files, query, setQuery, choose, close }: { files: LibraryF
             const comment = file.sidecar?.comment ?? "";
             const sidecarErrors = file.sidecar?.errors?.join("\n") ?? "";
             return (
-            <button className="row picker-row" key={file.id} onClick={() => choose(file)}>
+            <button type="button" className="row picker-row" key={file.id} onClick={() => choose(file)}>
               <FileThumbnail file={file} />
               <span className="truncate" title={[file.filename, file.path, sidecarErrors || comment].filter(Boolean).join("\n")}>
                 <strong>{file.filename}</strong>
