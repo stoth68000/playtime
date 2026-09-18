@@ -410,7 +410,7 @@ function Dashboard({ files, playouts, onStop, onRestart, onDelete, onStartAgain,
           </div>
           );
         })}
-        {!visible.length && <div className="empty">No playouts match this view.</div>}
+        {!visible.length && <div className="empty">No playouts match this view. Try defining and starting a Collection of jobs.</div>}
       </div>
     </section>
     {selected && <PlayoutDrawer playout={selected} file={selectedFile} close={() => setSelectedId(null)} onStop={onStop} onRestart={onRestart} onStartAgain={onStartAgain} />}
