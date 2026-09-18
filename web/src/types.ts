@@ -127,3 +127,15 @@ export interface ActivityEvent {
   at: string;
   payload?: unknown;
 }
+
+export interface TrafficInterface {
+  name: string;
+  addresses: string[];
+  txBitsPerSecond: number;
+  speedBitsPerSecond?: number;
+  availableBitsPerSecond?: number;
+  usagePercent?: number;
+  capacityKnown: boolean;
+  status?: string;
+  errors?: string[];
+}

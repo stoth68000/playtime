@@ -1,4 +1,4 @@
-import type { Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings, ActivityEvent } from "../types";
+import type { Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings, ActivityEvent, TrafficInterface } from "../types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const headers = init?.body ? { "Content-Type": "application/json", ...(init.headers ?? {}) } : init?.headers;
@@ -12,6 +12,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => request<{ ok: boolean; warnings: string[] }>("/api/health"),
+  traffic: () => request<TrafficInterface[]>("/api/traffic/interfaces"),
   settings: () => request<Settings>("/api/settings"),
   saveSettings: (settings: Settings) => request<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(settings) }),
   files: () => request<LibraryFile[]>("/api/library/files"),

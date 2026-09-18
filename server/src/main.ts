@@ -9,6 +9,7 @@ import { LibraryScanner } from "./library/scanner.js";
 import { CollectionStore } from "./collections/store.js";
 import { PlayoutSupervisor } from "./playout/supervisor.js";
 import { registerRoutes } from "./api/routes.js";
+import { TrafficMonitor } from "./traffic/monitor.js";
 
 const app = Fastify({ logger: true });
 const settingsStore = new SettingsStore();
@@ -17,6 +18,7 @@ const events = new EventBus();
 const library = new LibraryScanner(settings, events);
 const collections = new CollectionStore(settings, events);
 const playouts = new PlayoutSupervisor(settings, events, () => library.list());
+const traffic = new TrafficMonitor();
 let shuttingDown = false;
 const startupOnBootDelayMs = 3000;
 
@@ -44,6 +46,7 @@ await registerRoutes(app, {
   library,
   collections,
   playouts,
+  traffic,
   events
 });
 

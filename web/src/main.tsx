@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Activity, ArrowDown, ArrowUp, Clipboard, Copy, Database, ExternalLink, Eye, FolderSync, Library, ListPlus, Play, RotateCw, Save, Search, Settings as SettingsIcon, Square, Terminal, Trash2, X } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, ChevronDown, ChevronRight, Clipboard, Copy, Database, ExternalLink, Eye, FolderSync, Library, ListPlus, Network, Play, RotateCw, Save, Search, Settings as SettingsIcon, Square, Terminal, Trash2, X } from "lucide-react";
 import clsx from "clsx";
 import { api } from "./api/client";
-import type { ActivityEvent, Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings } from "./types";
+import type { ActivityEvent, Collection, CollectionPlayout, LibraryFile, PlayoutInstance, Settings, TrafficInterface } from "./types";
 import appIcon from "./app-icon.png";
 import "./styles/app.css";
 
-type Page = "dashboard" | "library" | "collections" | "activity" | "settings";
+type Page = "dashboard" | "library" | "collections" | "traffic" | "activity" | "settings";
 
 const emptyCollection = (): Collection => ({ name: "new-collection", description: "", startupOnBoot: false, updatedAt: new Date().toISOString(), playouts: [] });
 const newEntry = (file?: LibraryFile): CollectionPlayout => ({
@@ -44,6 +44,14 @@ function formatBitrate(value?: number): string {
   if (!value) return "-";
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)} Mb/s`;
   return `${Math.round(value / 1000)} kb/s`;
+}
+
+function formatTrafficRate(value?: number): string {
+  if (value === undefined) return "Unknown";
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)} Gb/s`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)} Mb/s`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)} kb/s`;
+  return `${Math.round(value)} b/s`;
 }
 
 function videoSummary(file: LibraryFile): string {
@@ -333,6 +341,7 @@ function App() {
           <button className={clsx({ active: page === "dashboard" })} onClick={() => setPage("dashboard")}><Play size={16} />Dashboard</button>
           <button className={clsx({ active: page === "library" })} onClick={() => setPage("library")}><Library size={16} />Library</button>
           <button className={clsx({ active: page === "collections" })} onClick={() => setPage("collections")}><Database size={16} />Collections</button>
+          <button className={clsx({ active: page === "traffic" })} onClick={() => setPage("traffic")}><Network size={16} />Traffic</button>
           <button className={clsx({ active: page === "activity" })} onClick={() => setPage("activity")}><Activity size={16} />Activity</button>
           <button className={clsx({ active: page === "settings" })} onClick={() => setPage("settings")}><SettingsIcon size={16} />Settings</button>
           <button onClick={() => window.open("/docs", "_blank", "noopener,noreferrer")}><ExternalLink size={16} />API Docs</button>
@@ -355,6 +364,7 @@ function App() {
         {page === "dashboard" && <Dashboard files={files} playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: playout.loop, autoRestart: playout.autoRestart, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
         {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} playouts={playouts} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
+        {page === "traffic" && <TrafficPage />}
         {page === "activity" && <ActivityPage activity={activity} />}
         {page === "settings" && settings && <SettingsPage settings={settings} setSettings={setSettings} save={(value) => api.saveSettings(value).then((saved) => { setSettings(saved); return refresh(); })} />}
       </main>
@@ -786,6 +796,90 @@ function FilePicker({ files, query, setQuery, choose, close }: { files: LibraryF
 
 function ActivityPage({ activity }: { activity: ActivityEvent[] }) {
   return <section className="panel"><div className="event-list">{activity.map((event) => <div className="event" key={event.id}><span>{new Date(event.at).toLocaleTimeString()}</span><strong>{event.type}</strong><p>{event.message}</p></div>)}</div></section>;
+}
+
+function TrafficPage() {
+  const [interfaces, setInterfaces] = useState<TrafficInterface[]>([]);
+  const [error, setError] = useState("");
+  const [showQuiet, setShowQuiet] = useState(false);
+  const refresh = async () => {
+    try {
+      setInterfaces(await api.traffic());
+      setError("");
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+  useEffect(() => {
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const sortedInterfaces = useMemo(() => [...interfaces].sort((a, b) => b.txBitsPerSecond - a.txBitsPerSecond || a.name.localeCompare(b.name)), [interfaces]);
+  const visibleInterfaces = useMemo(() => {
+    return sortedInterfaces.filter((item, index) => {
+      if (index < 4) return true;
+      if (item.txBitsPerSecond > 0) return true;
+      return showQuiet;
+    });
+  }, [showQuiet, sortedInterfaces]);
+  const hiddenQuietCount = sortedInterfaces.filter((item) => item.txBitsPerSecond <= 0).length - visibleInterfaces.filter((item) => item.txBitsPerSecond <= 0).length;
+  const totalTx = interfaces.reduce((sum, item) => sum + item.txBitsPerSecond, 0);
+  return (
+    <section className="panel">
+      <div className="panel-title">
+        <div>
+          <h2>Network Interfaces</h2>
+          <span>{interfaces.length} interfaces · TX {formatTrafficRate(totalTx)}</span>
+        </div>
+        <button onClick={() => void refresh()}><RotateCw size={16} />Refresh</button>
+      </div>
+      {error && <div className="alert danger">{error}</div>}
+      <div className="table traffic-table">
+        <div className="row head"><span>Interface</span><span>Status</span><span>TX</span><span>Capacity</span><span>Available</span><span>Usage</span></div>
+        {visibleInterfaces.map((item) => {
+          const usage = item.usagePercent ?? 0;
+          const level = item.capacityKnown && usage >= 90 ? "high" : item.capacityKnown && usage >= 70 ? "medium" : "low";
+          const title = [
+            item.addresses.join(", "),
+            item.errors?.join("\n")
+          ].filter(Boolean).join("\n");
+          return (
+            <div className="row traffic-row" key={item.name}>
+              <span className="interface-name" title={title || item.name}>
+                <strong>{item.name}</strong>
+                <small className="truncate">{item.addresses.join(", ") || "No address"}</small>
+                {item.errors?.length ? <small className="warn">{item.errors.join("; ")}</small> : null}
+              </span>
+              <span>{item.status ?? "-"}</span>
+              <span>{formatTrafficRate(item.txBitsPerSecond)}</span>
+              <span>{item.capacityKnown ? formatTrafficRate(item.speedBitsPerSecond) : "Unknown"}</span>
+              <span>{item.capacityKnown ? formatTrafficRate(item.availableBitsPerSecond) : "Unknown"}</span>
+              <span className="traffic-usage">
+                <span className="usage-bar" aria-label={item.capacityKnown ? `${usage.toFixed(1)} percent used` : "Capacity unknown"}>
+                  <span className={clsx("usage-fill", level, { unknown: !item.capacityKnown })} style={{ width: `${item.capacityKnown ? Math.min(100, usage) : 100}%` }} />
+                </span>
+                <strong>{item.capacityKnown ? `${usage.toFixed(1)}%` : "-"}</strong>
+              </span>
+            </div>
+          );
+        })}
+        {hiddenQuietCount > 0 && (
+          <button className="row traffic-collapse-row" onClick={() => setShowQuiet(true)}>
+            <ChevronRight size={16} />
+            <span>Show {hiddenQuietCount} quiet interfaces</span>
+          </button>
+        )}
+        {showQuiet && sortedInterfaces.filter((item) => item.txBitsPerSecond <= 0).length > 2 && (
+          <button className="row traffic-collapse-row" onClick={() => setShowQuiet(false)}>
+            <ChevronDown size={16} />
+            <span>Collapse quiet interfaces</span>
+          </button>
+        )}
+        {!interfaces.length && <div className="empty">No network interfaces reported.</div>}
+      </div>
+    </section>
+  );
 }
 
 function SettingsPage({ settings, setSettings, save }: { settings: Settings; setSettings: (s: Settings) => void; save: (s: Settings) => Promise<unknown> }) {

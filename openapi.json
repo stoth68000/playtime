@@ -28,6 +28,9 @@
       "name": "Playouts"
     },
     {
+      "name": "Traffic"
+    },
+    {
       "name": "Activity"
     }
   ],
@@ -671,6 +674,28 @@
         }
       }
     },
+    "/api/traffic/interfaces": {
+      "get": {
+        "tags": ["Traffic"],
+        "summary": "List host network interface TX utilization",
+        "operationId": "listTrafficInterfaces",
+        "responses": {
+          "200": {
+            "description": "Network interfaces with transmit rate and capacity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrafficInterface"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/activity": {
       "get": {
         "tags": ["Activity"],
@@ -1196,6 +1221,49 @@
             "format": "date-time"
           },
           "payload": true
+        }
+      },
+      "TrafficInterface": {
+        "type": "object",
+        "required": ["name", "addresses", "txBitsPerSecond", "capacityKnown"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "txBitsPerSecond": {
+            "type": "number",
+            "minimum": 0
+          },
+          "speedBitsPerSecond": {
+            "type": "number",
+            "minimum": 0
+          },
+          "availableBitsPerSecond": {
+            "type": "number",
+            "minimum": 0
+          },
+          "usagePercent": {
+            "type": "number",
+            "minimum": 0
+          },
+          "capacityKnown": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       },
       "TextOutput": {

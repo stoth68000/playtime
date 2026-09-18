@@ -8,6 +8,7 @@ import { LibraryScanner } from "../library/scanner.js";
 import { CollectionStore } from "../collections/store.js";
 import { PlayoutSupervisor } from "../playout/supervisor.js";
 import { EventBus } from "../events/eventBus.js";
+import { TrafficMonitor } from "../traffic/monitor.js";
 
 export interface AppServices {
   settingsStore: SettingsStore;
@@ -17,6 +18,7 @@ export interface AppServices {
   collections: CollectionStore;
   playouts: PlayoutSupervisor;
   events: EventBus;
+  traffic: TrafficMonitor;
 }
 
 export async function registerRoutes(app: FastifyInstance, services: AppServices): Promise<void> {
@@ -183,6 +185,7 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
   });
 
   app.get("/api/health", async () => ({ ok: true, warnings: services.settingsStore.validateRuntime(services.getSettings()) }));
+  app.get("/api/traffic/interfaces", async () => services.traffic.interfaces());
   app.get("/api/settings", async () => services.getSettings());
   app.put<{ Body: Settings }>("/api/settings", async (request) => {
     const settings = await services.settingsStore.save(request.body);
