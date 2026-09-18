@@ -31,6 +31,7 @@ const settings: Settings = {
   collectionsDir: path.join(root, "collections"),
   cacheDir: path.join(root, "cache"),
   logsDir: path.join(root, "logs"),
+  defaultUdpAddress: "227.1.1.1:4001",
   defaultLoop: true,
   defaultAutoRestart: false
 };

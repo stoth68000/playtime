@@ -16,6 +16,7 @@ const settingsSchema = z.object({
   collectionsDir: z.string().default("./data/collections"),
   cacheDir: z.string().default("./data/cache"),
   logsDir: z.string().default("./data/logs"),
+  defaultUdpAddress: z.string().default("227.1.1.1:4001"),
   defaultLoop: z.boolean().default(true),
   defaultAutoRestart: z.boolean().default(false)
 });
@@ -59,6 +60,7 @@ export class SettingsStore {
     if (!settings.smootherArgs.some((arg) => arg.includes("{file}"))) warnings.push("smootherArgs should include {file}");
     if (!settings.smootherArgs.some((arg) => arg.includes("{target}"))) warnings.push("smootherArgs should include {target}");
     if (!settings.metadataProbeArgs.some((arg) => arg.includes("{file}"))) warnings.push("metadataProbeArgs should include {file}");
+    if (!/^(udp:\/\/)?\d{1,3}(\.\d{1,3}){3}:\d+$/i.test(settings.defaultUdpAddress)) warnings.push("defaultUdpAddress should look like 227.1.1.1:4001");
     return warnings;
   }
 

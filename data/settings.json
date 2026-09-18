@@ -27,6 +27,7 @@
   "collectionsDir": "./data/collections",
   "cacheDir": "./data/cache",
   "logsDir": "./data/logs",
+  "defaultUdpAddress": "227.1.1.1:4001",
   "defaultLoop": true,
   "defaultAutoRestart": false
 }

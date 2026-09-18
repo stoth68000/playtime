@@ -11,6 +11,7 @@ export interface Settings {
   collectionsDir: string;
   cacheDir: string;
   logsDir: string;
+  defaultUdpAddress: string;
   defaultLoop: boolean;
   defaultAutoRestart: boolean;
 }

@@ -798,6 +798,7 @@
           "collectionsDir",
           "cacheDir",
           "logsDir",
+          "defaultUdpAddress",
           "defaultLoop",
           "defaultAutoRestart"
         ],
@@ -842,6 +843,11 @@
           },
           "logsDir": {
             "type": "string"
+          },
+          "defaultUdpAddress": {
+            "type": "string",
+            "default": "227.1.1.1:4001",
+            "description": "Default UDP destination address and port for the first new collection entry."
           },
           "defaultLoop": {
             "type": "boolean"

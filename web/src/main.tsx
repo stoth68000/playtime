@@ -9,9 +9,9 @@ import "./styles/app.css";
 
 type Page = "dashboard" | "library" | "collections" | "traffic" | "activity" | "settings";
 
-const defaultTarget = "udp://239.10.10.1:5000";
+const defaultUdpAddress = "227.1.1.1:4001";
 const emptyCollection = (): Collection => ({ name: "new-collection", description: "", startupOnBoot: false, updatedAt: new Date().toISOString(), playouts: [] });
-const newEntry = (file?: LibraryFile, target = defaultTarget): CollectionPlayout => ({
+const newEntry = (file?: LibraryFile, target = normalizeUdpTarget(defaultUdpAddress)): CollectionPlayout => ({
   id: crypto.randomUUID(),
   label: file?.filename ?? "New playout",
   fileId: file?.id,
@@ -28,10 +28,11 @@ interface UdpTargetParts {
   suffix: string;
 }
 
-function nextCollectionTarget(entries: CollectionPlayout[]): string {
+function nextCollectionTarget(entries: CollectionPlayout[], defaultAddress = defaultUdpAddress): string {
   const usedTargets = new Set(entries.map((entry) => entry.target.trim()).filter(Boolean));
+  const defaultTarget = normalizeUdpTarget(defaultAddress);
   const seed = [...entries].reverse().map((entry) => parseUdpIpv4Target(entry.target)).find(Boolean) ?? parseUdpIpv4Target(defaultTarget);
-  if (!seed) return defaultTarget;
+  if (!seed) return normalizeUdpTarget(defaultUdpAddress);
   let current = formatUdpTarget(seed);
   if (!usedTargets.has(current)) return current;
   for (let index = 0; index < 65_536; index += 1) {
@@ -41,7 +42,12 @@ function nextCollectionTarget(entries: CollectionPlayout[]): string {
     current = formatUdpTarget(seed);
     if (!usedTargets.has(current)) return current;
   }
-  return defaultTarget;
+  return normalizeUdpTarget(defaultUdpAddress);
+}
+
+function normalizeUdpTarget(address: string): string {
+  const trimmed = address.trim();
+  return /^udp:\/\//i.test(trimmed) ? trimmed : `udp://${trimmed}`;
 }
 
 function parseUdpIpv4Target(target: string): UdpTargetParts | undefined {
@@ -234,6 +240,7 @@ function App() {
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const configuredDefaultUdpAddress = settings?.defaultUdpAddress ?? defaultUdpAddress;
 
   const refresh = async () => {
     const [health, nextSettings, nextFiles, nextCollections, nextPlayouts, nextActivity] = await Promise.all([
@@ -412,8 +419,8 @@ function App() {
         {error && <div className="alert danger">{error}</div>}
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
         {page === "dashboard" && <Dashboard files={files} playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: playout.loop, autoRestart: playout.autoRestart, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
-        {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file, nextCollectionTarget(c.playouts))] })); setPage("collections"); }} />}
-        {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} playouts={playouts} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
+        {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file, nextCollectionTarget(c.playouts, configuredDefaultUdpAddress))] })); setPage("collections"); }} />}
+        {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} playouts={playouts} defaultUdpAddress={configuredDefaultUdpAddress} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "traffic" && <TrafficPage />}
         {page === "activity" && <ActivityPage activity={activity} />}
         {page === "settings" && settings && <SettingsPage settings={settings} setSettings={setSettings} save={(value) => api.saveSettings(value).then((saved) => { setSettings(saved); return refresh(); })} />}
@@ -661,8 +668,8 @@ function FileThumbnail({ file, size = "default" }: { file?: LibraryFile; size?: 
   );
 }
 
-function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; playouts: PlayoutInstance[]; save: () => Promise<void>; startCollection: (collection: Collection) => Promise<void>; stopCollection: (collection: Collection) => Promise<void>; deleteCollection: (name: string) => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
-  const { collections, active, setActive, files, playouts, save, startCollection, stopCollection, deleteCollection: removeCollection, updateEntry, refresh } = props;
+function CollectionsPage(props: { collections: Collection[]; active: Collection; setActive: (c: Collection) => void; files: LibraryFile[]; playouts: PlayoutInstance[]; defaultUdpAddress: string; save: () => Promise<void>; startCollection: (collection: Collection) => Promise<void>; stopCollection: (collection: Collection) => Promise<void>; deleteCollection: (name: string) => Promise<void>; updateEntry: (id: string, patch: Partial<CollectionPlayout>) => void; refresh: () => Promise<void> }) {
+  const { collections, active, setActive, files, playouts, defaultUdpAddress, save, startCollection, stopCollection, deleteCollection: removeCollection, updateEntry, refresh } = props;
   const [pickerEntryId, setPickerEntryId] = useState<string | null>(null);
   const [pickerQuery, setPickerQuery] = useState("");
   const [probeFile, setProbeFile] = useState<LibraryFile | null>(null);
@@ -680,7 +687,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   const chooseFile = (file: LibraryFile) => {
     if (!pickerEntryId) return;
     if (pickerEntryId === "new") {
-      setActive({ ...active, playouts: [...active.playouts, newEntry(file, nextCollectionTarget(active.playouts))] });
+      setActive({ ...active, playouts: [...active.playouts, newEntry(file, nextCollectionTarget(active.playouts, defaultUdpAddress))] });
     } else {
       updateEntry(pickerEntryId, { fileId: file.id, filePath: file.path, label: file.filename });
     }
@@ -699,7 +706,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   const duplicateEntry = (entry: CollectionPlayout) => {
     setActive({
       ...active,
-      playouts: [...active.playouts, { ...entry, id: crypto.randomUUID(), label: `${entry.label} copy`, target: nextCollectionTarget(active.playouts) }]
+      playouts: [...active.playouts, { ...entry, id: crypto.randomUUID(), label: `${entry.label} copy`, target: nextCollectionTarget(active.playouts, defaultUdpAddress) }]
     });
   };
   const deleteCollection = async () => {
@@ -751,7 +758,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
         {collectionIssues.length > 0 && <div className="validation-strip">{collectionIssues.map((issue) => <span key={issue}>{issue}</span>)}</div>}
         <div className="toolbar">
           <button onClick={() => setPickerEntryId("new")}><ListPlus size={16} />Add From Library</button>
-          <button onClick={() => setActive({ ...active, playouts: [...active.playouts, newEntry(undefined, nextCollectionTarget(active.playouts))] })}>Add Manual</button>
+          <button onClick={() => setActive({ ...active, playouts: [...active.playouts, newEntry(undefined, nextCollectionTarget(active.playouts, defaultUdpAddress))] })}>Add Manual</button>
         </div>
         <div className="entry-list">
           {active.playouts.map((entry, index) => {
@@ -948,6 +955,7 @@ function SettingsPage({ settings, setSettings, save }: { settings: Settings; set
       <label>Collections dir<input value={settings.collectionsDir} onChange={(e) => setSettings({ ...settings, collectionsDir: e.target.value })} /></label>
       <label>Cache dir<input value={settings.cacheDir} onChange={(e) => setSettings({ ...settings, cacheDir: e.target.value })} /></label>
       <label>Logs dir<input value={settings.logsDir} onChange={(e) => setSettings({ ...settings, logsDir: e.target.value })} /></label>
+      <label>Default UDP address<input value={settings.defaultUdpAddress} onChange={(e) => setSettings({ ...settings, defaultUdpAddress: e.target.value })} placeholder="227.1.1.1:4001" /></label>
       <button className="primary" onClick={() => void save(next)}>Save Settings</button>
     </section>
   );
