@@ -10,9 +10,13 @@ import "./styles/app.css";
 type Page = "dashboard" | "library" | "collections" | "traffic" | "activity" | "settings";
 
 const defaultUdpAddress = "227.1.1.1:4001";
+function newId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 const emptyCollection = (): Collection => ({ name: "new-collection", description: "", startupOnBoot: false, updatedAt: new Date().toISOString(), playouts: [] });
 const newEntry = (file?: LibraryFile, target = normalizeUdpTarget(defaultUdpAddress)): CollectionPlayout => ({
-  id: crypto.randomUUID(),
+  id: newId(),
   label: file?.filename ?? "New playout",
   fileId: file?.id,
   filePath: file?.path ?? "",
@@ -425,7 +429,7 @@ function App() {
         </header>
         {error && <div className="alert danger">{error}</div>}
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
-        {page === "dashboard" && <Dashboard files={files} playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: playout.loop, autoRestart: playout.autoRestart, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
+        {page === "dashboard" && <Dashboard files={files} playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: newId(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: playout.loop, autoRestart: playout.autoRestart, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file, nextCollectionTarget(c.playouts, configuredDefaultUdpAddress))] })); setPage("collections"); }} />}
         {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} playouts={playouts} defaultUdpAddress={configuredDefaultUdpAddress} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "traffic" && <TrafficPage activeStreams={playouts.filter((playout) => playout.state === "running").length} />}
@@ -715,7 +719,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   const duplicateEntry = (entry: CollectionPlayout) => {
     setActive({
       ...active,
-      playouts: [...active.playouts, { ...entry, id: crypto.randomUUID(), label: `${entry.label} copy`, target: nextCollectionTarget(active.playouts, defaultUdpAddress) }]
+      playouts: [...active.playouts, { ...entry, id: newId(), label: `${entry.label} copy`, target: nextCollectionTarget(active.playouts, defaultUdpAddress) }]
     });
   };
   const deleteCollection = async () => {
