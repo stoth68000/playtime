@@ -17,7 +17,7 @@ Open:
 http://127.0.0.1:5173
 ```
 
-The API runs on:
+The REST API runs on:
 
 ```text
 http://127.0.0.1:4500
