@@ -421,7 +421,7 @@ function App() {
         {page === "dashboard" && <Dashboard files={files} playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: playout.loop, autoRestart: playout.autoRestart, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
         {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file, nextCollectionTarget(c.playouts, configuredDefaultUdpAddress))] })); setPage("collections"); }} />}
         {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} playouts={playouts} defaultUdpAddress={configuredDefaultUdpAddress} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
-        {page === "traffic" && <TrafficPage />}
+        {page === "traffic" && <TrafficPage activeStreams={playouts.filter((playout) => playout.state === "running").length} />}
         {page === "activity" && <ActivityPage activity={activity} />}
         {page === "settings" && settings && <SettingsPage settings={settings} setSettings={setSettings} save={(value) => api.saveSettings(value).then((saved) => { setSettings(saved); return refresh(); })} />}
       </main>
@@ -855,7 +855,7 @@ function ActivityPage({ activity }: { activity: ActivityEvent[] }) {
   return <section className="panel"><div className="event-list">{activity.map((event) => <div className="event" key={event.id}><span>{new Date(event.at).toLocaleTimeString()}</span><strong>{event.type}</strong><p>{event.message}</p></div>)}</div></section>;
 }
 
-function TrafficPage() {
+function TrafficPage({ activeStreams }: { activeStreams: number }) {
   const [interfaces, setInterfaces] = useState<TrafficInterface[]>([]);
   const [error, setError] = useState("");
   const [showQuiet, setShowQuiet] = useState(false);
@@ -887,7 +887,7 @@ function TrafficPage() {
       <div className="panel-title">
         <div>
           <h2>Network Interfaces</h2>
-          <span>{interfaces.length} interfaces · TX {formatTrafficRate(totalTx)}</span>
+          <span>{interfaces.length} interfaces · TX {formatTrafficRate(totalTx)} · {activeStreams} active streams</span>
         </div>
         <button onClick={() => void refresh()}><RotateCw size={16} />Refresh</button>
       </div>
