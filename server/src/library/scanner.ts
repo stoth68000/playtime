@@ -60,6 +60,12 @@ export class LibraryScanner {
     return mediaInfoOutput(file.path, this.settings);
   }
 
+  async sidecarOutput(id: string): Promise<string | undefined> {
+    const file = this.files.get(id);
+    if (!file?.sidecar?.path) return undefined;
+    return fs.readFile(file.sidecar.path, "utf8");
+  }
+
   async scan(): Promise<LibraryFile[]> {
     this.events.emit("library.scan.started", "Library scan started");
     const discovered: LibraryFile[] = [];

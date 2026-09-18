@@ -266,6 +266,33 @@
         }
       }
     },
+    "/api/library/files/{id}/sidecar-output": {
+      "get": {
+        "tags": ["Library"],
+        "summary": "Get raw PlayTime sidecar JSON for a library file",
+        "operationId": "getSidecarOutput",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Id"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sidecar JSON file contents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TextOutput"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/api/library/rescan": {
       "post": {
         "tags": ["Library"],

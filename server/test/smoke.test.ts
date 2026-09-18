@@ -42,5 +42,6 @@ const invalid = files.find((file) => file.filename === "invalid.ts");
 assert.equal(valid?.sidecar?.comment, "Important reference stream");
 assert.equal(valid?.sidecar?.path, path.join(libraryDir, "valid.playtime.json"));
 assert.ok(invalid?.sidecar?.errors?.[0].startsWith("Sidecar read failed:"));
+assert.equal(await scanner.sidecarOutput(valid?.id ?? ""), JSON.stringify({ comment: "Important reference stream", tags: ["future"] }));
 
 console.log("smoke tests passed");

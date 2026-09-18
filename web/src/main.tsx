@@ -522,9 +522,11 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
 }
 
 function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; output: string; error: string; close: () => void }) {
-  const [tab, setTab] = useState<"ffprobe" | "mediainfo">("mediainfo");
+  const [tab, setTab] = useState<"ffprobe" | "mediainfo" | "sidecar">("mediainfo");
   const [mediaInfoOutput, setMediaInfoOutput] = useState("");
   const [mediaInfoError, setMediaInfoError] = useState("");
+  const [sidecarOutput, setSidecarOutput] = useState("");
+  const [sidecarError, setSidecarError] = useState("");
   const loadMediaInfo = async (switchTab = true) => {
     if (switchTab) setTab("mediainfo");
     if (mediaInfoOutput || mediaInfoError) return;
@@ -535,11 +537,22 @@ function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; o
       setMediaInfoError((err as Error).message);
     }
   };
+  const loadSidecar = async () => {
+    setTab("sidecar");
+    if (sidecarOutput || sidecarError) return;
+    try {
+      const result = await api.sidecarOutput(file.id);
+      setSidecarOutput(result.output);
+    } catch (err) {
+      setSidecarError((err as Error).message);
+    }
+  };
   useEffect(() => {
     void loadMediaInfo(false);
   }, [file.id]);
-  const activeOutput = tab === "ffprobe" ? output : mediaInfoOutput;
-  const activeError = tab === "ffprobe" ? error : mediaInfoError;
+  const activeOutput = tab === "ffprobe" ? output : tab === "sidecar" ? sidecarOutput : mediaInfoOutput;
+  const activeError = tab === "ffprobe" ? error : tab === "sidecar" ? sidecarError : mediaInfoError;
+  const emptyText = tab === "sidecar" ? "No sidecar file found." : "Loading...";
   return (
     <div className="modal-backdrop">
       <div className="modal probe-modal">
@@ -551,10 +564,11 @@ function ProbeOutputModal({ file, output, error, close }: { file: LibraryFile; o
         <div className="probe-tabs" role="tablist" aria-label="Media analysis output">
           <button className={clsx({ active: tab === "mediainfo" })} onClick={() => void loadMediaInfo()}>MediaInfo</button>
           <button className={clsx({ active: tab === "ffprobe" })} onClick={() => setTab("ffprobe")}>ffprobe</button>
+          <button className={clsx({ active: tab === "sidecar" })} onClick={() => void loadSidecar()}>Sidecar</button>
         </div>
         <div className="probe-body">
           {activeError && <div className="alert danger">{activeError}</div>}
-          <pre className="probe-output">{activeOutput || (!activeError ? "Loading..." : "")}</pre>
+          <pre className="probe-output">{activeOutput || (!activeError ? emptyText : "")}</pre>
         </div>
       </div>
     </div>

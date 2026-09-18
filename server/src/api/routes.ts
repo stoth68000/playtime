@@ -210,6 +210,11 @@ export async function registerRoutes(app: FastifyInstance, services: AppServices
     if (!output) return reply.code(404).send({ error: "File not found" });
     return { output };
   });
+  app.get<{ Params: { id: string } }>("/api/library/files/:id/sidecar-output", async (request, reply) => {
+    const output = await services.library.sidecarOutput(request.params.id);
+    if (!output) return reply.code(404).send({ error: "Sidecar not found" });
+    return { output };
+  });
   app.get<{ Params: { id: string } }>("/api/library/files/:id", async (request, reply) => {
     const file = services.library.get(request.params.id);
     if (!file) return reply.code(404).send({ error: "File not found" });
