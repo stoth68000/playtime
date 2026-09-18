@@ -9,17 +9,67 @@ import "./styles/app.css";
 
 type Page = "dashboard" | "library" | "collections" | "traffic" | "activity" | "settings";
 
+const defaultTarget = "udp://239.10.10.1:5000";
 const emptyCollection = (): Collection => ({ name: "new-collection", description: "", startupOnBoot: false, updatedAt: new Date().toISOString(), playouts: [] });
-const newEntry = (file?: LibraryFile): CollectionPlayout => ({
+const newEntry = (file?: LibraryFile, target = defaultTarget): CollectionPlayout => ({
   id: crypto.randomUUID(),
   label: file?.filename ?? "New playout",
   fileId: file?.id,
   filePath: file?.path ?? "",
-  target: "udp://239.10.10.1:5000",
+  target,
   loop: true,
   autoRestart: false,
   enabled: true
 });
+
+interface UdpTargetParts {
+  octets: number[];
+  port: string;
+  suffix: string;
+}
+
+function nextCollectionTarget(entries: CollectionPlayout[]): string {
+  const usedTargets = new Set(entries.map((entry) => entry.target.trim()).filter(Boolean));
+  const seed = [...entries].reverse().map((entry) => parseUdpIpv4Target(entry.target)).find(Boolean) ?? parseUdpIpv4Target(defaultTarget);
+  if (!seed) return defaultTarget;
+  let current = formatUdpTarget(seed);
+  if (!usedTargets.has(current)) return current;
+  for (let index = 0; index < 65_536; index += 1) {
+    const next = incrementUdpTarget(seed);
+    if (!next) break;
+    seed.octets = next.octets;
+    current = formatUdpTarget(seed);
+    if (!usedTargets.has(current)) return current;
+  }
+  return defaultTarget;
+}
+
+function parseUdpIpv4Target(target: string): UdpTargetParts | undefined {
+  const match = target.trim().match(/^udp:\/\/(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3}):(\d+)([/?#].*)?$/i);
+  if (!match) return undefined;
+  const octets = match.slice(1, 5).map(Number);
+  if (octets.some((octet) => !Number.isInteger(octet) || octet < 0 || octet > 255)) return undefined;
+  return { octets, port: match[5], suffix: match[6] ?? "" };
+}
+
+function incrementUdpTarget(target: UdpTargetParts): UdpTargetParts | undefined {
+  const value = target.octets.reduce((sum, octet) => (sum * 256) + octet, 0);
+  if (value >= 0xffffffff) return undefined;
+  const next = value + 1;
+  return {
+    ...target,
+    octets: [
+      (next >>> 24) & 255,
+      (next >>> 16) & 255,
+      (next >>> 8) & 255,
+      next & 255
+    ]
+  };
+}
+
+function formatUdpTarget(target: UdpTargetParts): string {
+  return `udp://${target.octets.join(".")}:${target.port}${target.suffix}`;
+}
 
 function formatBytes(value: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -362,7 +412,7 @@ function App() {
         {error && <div className="alert danger">{error}</div>}
         {warnings.map((warning) => <div className="alert" key={warning}>{warning}</div>)}
         {page === "dashboard" && <Dashboard files={files} playouts={playouts} onStop={stopPlayout} onRestart={restartPlayout} onDelete={deletePlayout} onStartAgain={(playout) => api.startPlayout({ id: crypto.randomUUID(), label: playout.label, filePath: playout.filePath, target: playout.target, loop: playout.loop, autoRestart: playout.autoRestart, enabled: true }).then(refresh)} onClearCompleted={() => api.clearCompletedPlayouts().then(refresh)} />}
-        {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file)] })); setPage("collections"); }} />}
+        {page === "library" && <LibraryPage files={filteredFiles} query={query} setQuery={setQuery} rescan={() => api.rescan().then(setFiles)} addFile={(file) => { setActiveCollection((c) => ({ ...c, playouts: [...c.playouts, newEntry(file, nextCollectionTarget(c.playouts))] })); setPage("collections"); }} />}
         {page === "collections" && <CollectionsPage collections={collections} active={activeCollection} setActive={setActiveCollection} files={files} playouts={playouts} save={saveCollection} startCollection={startCollection} stopCollection={stopCollection} deleteCollection={deleteCollection} updateEntry={updateEntry} refresh={refresh} />}
         {page === "traffic" && <TrafficPage />}
         {page === "activity" && <ActivityPage activity={activity} />}
@@ -630,7 +680,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   const chooseFile = (file: LibraryFile) => {
     if (!pickerEntryId) return;
     if (pickerEntryId === "new") {
-      setActive({ ...active, playouts: [...active.playouts, newEntry(file)] });
+      setActive({ ...active, playouts: [...active.playouts, newEntry(file, nextCollectionTarget(active.playouts))] });
     } else {
       updateEntry(pickerEntryId, { fileId: file.id, filePath: file.path, label: file.filename });
     }
@@ -649,7 +699,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   const duplicateEntry = (entry: CollectionPlayout) => {
     setActive({
       ...active,
-      playouts: [...active.playouts, { ...entry, id: crypto.randomUUID(), label: `${entry.label} copy` }]
+      playouts: [...active.playouts, { ...entry, id: crypto.randomUUID(), label: `${entry.label} copy`, target: nextCollectionTarget(active.playouts) }]
     });
   };
   const deleteCollection = async () => {
@@ -701,7 +751,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
         {collectionIssues.length > 0 && <div className="validation-strip">{collectionIssues.map((issue) => <span key={issue}>{issue}</span>)}</div>}
         <div className="toolbar">
           <button onClick={() => setPickerEntryId("new")}><ListPlus size={16} />Add From Library</button>
-          <button onClick={() => setActive({ ...active, playouts: [...active.playouts, newEntry()] })}>Add Manual</button>
+          <button onClick={() => setActive({ ...active, playouts: [...active.playouts, newEntry(undefined, nextCollectionTarget(active.playouts))] })}>Add Manual</button>
         </div>
         <div className="entry-list">
           {active.playouts.map((entry, index) => {
