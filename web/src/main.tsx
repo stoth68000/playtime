@@ -215,7 +215,7 @@ function App() {
 
   const filteredFiles = useMemo(() => {
     const q = query.toLowerCase();
-    return files.filter((file) => `${file.filename} ${file.path}`.toLowerCase().includes(q));
+    return files.filter((file) => `${file.filename} ${file.path} ${file.sidecar?.comment ?? ""}`.toLowerCase().includes(q));
   }, [files, query]);
 
   const saveCollection = async () => {
@@ -481,15 +481,18 @@ function LibraryPage({ files, query, setQuery, rescan, addFile }: { files: Libra
     <section className="panel">
       <div className="toolbar"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search library" /><button onClick={() => void rescan()}><FolderSync size={16} />Rescan</button></div>
       <div className="table library-table">
-        <div className="row head"><span>Preview</span><span>File</span><span>Duration</span><span>Bitrate</span><span>Video</span><span>Audio</span><span></span></div>
+        <div className="row head"><span>Preview</span><span>File</span><span>Comment</span><span>Duration</span><span>Bitrate</span><span>Video</span><span>Audio</span><span></span></div>
         {files.map((file) => {
           const video = videoSummary(file);
           const transportType = transportTypeSummary(file);
           const audio = audioSummary(file);
+          const comment = file.sidecar?.comment ?? "";
+          const sidecarErrors = file.sidecar?.errors?.join("\n") ?? "";
           return (
           <div className="row" key={file.id} onDoubleClick={() => void openProbe(file)}>
             <FileThumbnail file={file} />
             <span className="truncate" title={`${file.filename}\n${file.path}`}><strong>{file.filename}</strong><small>{file.path}</small></span>
+            <span className={clsx("truncate", "comment-cell", { warn: sidecarErrors })} title={sidecarErrors || comment}>{comment || (sidecarErrors ? "Sidecar error" : "-")}</span>
             <span>{formatDuration(file.metadata.duration)}</span>
             <span>{formatBitrate(file.metadata.bitrate)}</span>
             <span className="video-summary-cell" title={`${video}\n${transportType}`}>

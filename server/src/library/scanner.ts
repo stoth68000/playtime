@@ -92,6 +92,7 @@ export class LibraryScanner {
         const stat = await fs.stat(fullPath);
         const id = crypto.createHash("sha1").update(fullPath).digest("hex").slice(0, 16);
         const cached = this.files.get(id);
+        const sidecar = await this.readSidecar(fullPath);
         const cachedHasThumbnail = !cached?.metadata.videoStreams?.length || this.hasCurrentThumbnail(id, cached);
         const cachedHasTransportType = Boolean(cached?.metadata.transportType);
         const unchanged = cached?.size === stat.size && cached.modifiedAt === stat.mtime.toISOString() && cached.metadataStatus === "probed" && cachedHasThumbnail && cachedHasTransportType;
@@ -103,9 +104,26 @@ export class LibraryScanner {
           modifiedAt: stat.mtime.toISOString(),
           extension: path.extname(entry.name).toLowerCase(),
           metadataStatus: unchanged ? cached.metadataStatus : "basic",
-          metadata: unchanged ? cached.metadata : { notes: ["Basic filesystem metadata indexed"] }
+          metadata: unchanged ? cached.metadata : { notes: ["Basic filesystem metadata indexed"] },
+          sidecar
         });
       }
+    }
+  }
+
+  private async readSidecar(filePath: string): Promise<LibraryFile["sidecar"]> {
+    const sidecarPath = path.join(path.dirname(filePath), `${path.basename(filePath, path.extname(filePath))}.playtime.json`);
+    try {
+      const content = await fs.readFile(sidecarPath, "utf8");
+      const parsed = JSON.parse(content) as { comment?: unknown };
+      const sidecar: LibraryFile["sidecar"] = { path: sidecarPath };
+      if (typeof parsed.comment === "string") sidecar.comment = parsed.comment;
+      else if (parsed.comment !== undefined) sidecar.errors = ["Sidecar comment must be a string"];
+      return sidecar;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") return undefined;
+      return { path: sidecarPath, errors: [`Sidecar read failed: ${(error as Error).message}`] };
     }
   }
 

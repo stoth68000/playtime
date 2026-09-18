@@ -238,7 +238,7 @@ h2 {
 }
 
 .library-table .row {
-  grid-template-columns: 78px minmax(442px, 1.95fr) 80px 105px minmax(170px, 0.85fr) minmax(180px, 0.85fr) 70px;
+  grid-template-columns: 78px minmax(330px, 1.45fr) minmax(180px, 0.8fr) 80px 105px minmax(160px, 0.7fr) minmax(160px, 0.7fr) 70px;
   align-items: start;
   min-height: 66px;
 }
@@ -371,6 +371,15 @@ h2 {
 .library-table .media-summary-cell,
 .picker-table .media-summary-cell {
   font-size: 12px;
+}
+
+.library-table .comment-cell {
+  color: #b8c3d0;
+  font-size: 12px;
+}
+
+.library-table .comment-cell.warn {
+  color: #ffc36b;
 }
 
 .library-table .video-summary-cell,

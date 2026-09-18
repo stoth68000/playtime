@@ -49,3 +49,15 @@ PlayTime probes MPEG-TS files with the bundled static `ffprobe` by default:
 ```
 
 Library rescans cache duration, bitrate, packet size, program/service data, codecs, video streams, audio streams, and probe errors in `data/cache/library-index.json`.
+
+## Sidecar Metadata
+
+Each transport stream can have an optional sidecar JSON file in the same directory. For `example.ts`, name the sidecar `example.playtime.json`:
+
+```json
+{
+  "comment": "Important reference stream for QA."
+}
+```
+
+The `comment` is shown in the Library view and included in library search results.

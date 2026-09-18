@@ -829,6 +829,27 @@
           },
           "metadata": {
             "$ref": "#/components/schemas/FileMetadata"
+          },
+          "sidecar": {
+            "$ref": "#/components/schemas/LibrarySidecar"
+          }
+        }
+      },
+      "LibrarySidecar": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },

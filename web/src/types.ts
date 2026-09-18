@@ -24,6 +24,13 @@ export interface LibraryFile {
   extension: string;
   metadataStatus: string;
   metadata: FileMetadata;
+  sidecar?: LibrarySidecar;
+}
+
+export interface LibrarySidecar {
+  path: string;
+  comment?: string;
+  errors?: string[];
 }
 
 export interface FileMetadata {
