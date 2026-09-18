@@ -733,17 +733,23 @@ function FilePicker({ files, query, setQuery, choose, close }: { files: LibraryF
           <h2>Select Library File</h2>
           <button title="Close" onClick={close}><X size={16} /></button>
         </div>
-        <div className="searchline"><Search size={16} /><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search filename, path, codec, service" /></div>
+        <div className="searchline"><Search size={16} /><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search filename, path, comment, codec, service" /></div>
         <div className="table picker-table">
           <div className="row head"><span>Preview</span><span>File</span><span>Duration</span><span>Bitrate</span><span>Video</span><span>Audio</span></div>
           {files.map((file) => {
             const video = videoSummary(file);
             const transportType = transportTypeSummary(file);
             const audio = audioSummary(file);
+            const comment = file.sidecar?.comment ?? "";
+            const sidecarErrors = file.sidecar?.errors?.join("\n") ?? "";
             return (
             <button className="row picker-row" key={file.id} onClick={() => choose(file)}>
               <FileThumbnail file={file} />
-              <span className="truncate" title={`${file.filename}\n${file.path}`}><strong>{file.filename}</strong><small>{file.path}</small></span>
+              <span className="truncate" title={[file.filename, file.path, sidecarErrors || comment].filter(Boolean).join("\n")}>
+                <strong>{file.filename}</strong>
+                <small>{file.path}</small>
+                {(comment || sidecarErrors) && <small className={clsx("comment-cell", { warn: sidecarErrors })}>{comment || "Sidecar error"}</small>}
+              </span>
               <span>{formatDuration(file.metadata.duration)}</span>
               <span>{formatBitrate(file.metadata.bitrate)}</span>
               <span className="video-summary-cell" title={`${video}\n${transportType}`}>

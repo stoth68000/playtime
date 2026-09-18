@@ -373,12 +373,14 @@ h2 {
   font-size: 12px;
 }
 
-.library-table .comment-cell {
+.library-table .comment-cell,
+.picker-table .comment-cell {
   color: #b8c3d0;
   font-size: 12px;
 }
 
-.library-table .comment-cell.warn {
+.library-table .comment-cell.warn,
+.picker-table .comment-cell.warn {
   color: #ffc36b;
 }
 
