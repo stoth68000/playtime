@@ -8,12 +8,12 @@ import { resolveAppPath } from "../util/paths.js";
 const settingsSchema = z.object({
   serverPort: z.number().int().min(1).max(65535).default(4500),
   libraryPaths: z.array(z.string()).default(["./samples"]),
-  smootherCommand: z.string().default("./bin/tstools_bitrate_smoother"),
+  smootherCommand: z.string().default(defaultToolCommands().smootherCommand),
   smootherArgs: z.array(z.string()).default(["--input", "{file}", "--output", "{target}"]),
-  metadataProbeCommand: z.string().default("./bin/ffprobe"),
+  metadataProbeCommand: z.string().default(defaultToolCommands().metadataProbeCommand),
   metadataProbeArgs: z.array(z.string()).default(["-v", "error", "-show_format", "-show_streams", "-show_programs", "-of", "json", "{file}"]),
-  ffmpegCommand: z.string().default("./bin/ffmpeg"),
-  mediaInfoCommand: z.string().default("./bin/mediainfo"),
+  ffmpegCommand: z.string().default(defaultToolCommands().ffmpegCommand),
+  mediaInfoCommand: z.string().default(defaultToolCommands().mediaInfoCommand),
   collectionsDir: z.string().default("./data/collections"),
   cacheDir: z.string().default("./data/cache"),
   logsDir: z.string().default("./data/logs"),
@@ -72,14 +72,51 @@ export class SettingsStore {
   private preferBundledTools(settings: Settings): Settings {
     return {
       ...settings,
-      metadataProbeCommand: this.preferBundledTool(settings.metadataProbeCommand, "ffprobe"),
-      ffmpegCommand: this.preferBundledTool(settings.ffmpegCommand, "ffmpeg"),
-      mediaInfoCommand: this.preferBundledTool(settings.mediaInfoCommand, "mediainfo")
+      smootherCommand: this.platformTool(settings.smootherCommand, "smootherCommand"),
+      metadataProbeCommand: this.platformTool(settings.metadataProbeCommand, "metadataProbeCommand"),
+      ffmpegCommand: this.platformTool(settings.ffmpegCommand, "ffmpegCommand"),
+      mediaInfoCommand: this.platformTool(settings.mediaInfoCommand, "mediaInfoCommand")
     };
   }
 
-  private preferBundledTool(command: string, binary: string): string {
-    const bundled = `./bin/${binary}`;
-    return command === binary && existsSync(resolveAppPath(bundled)) ? bundled : command;
+  private platformTool(command: string, key: keyof ToolCommands): string {
+    const defaults = defaultToolCommands();
+    const known = knownToolCommands(key);
+    if (known.has(command)) return defaults[key];
+    return command;
   }
+}
+
+interface ToolCommands {
+  smootherCommand: string;
+  metadataProbeCommand: string;
+  ffmpegCommand: string;
+  mediaInfoCommand: string;
+}
+
+function defaultToolCommands(platform = process.platform): ToolCommands {
+  if (platform === "linux") {
+    return {
+      smootherCommand: "tstools_bitrate_smoother",
+      metadataProbeCommand: "./bin/ffprobe-linux",
+      ffmpegCommand: "./bin/ffmpeg-linux",
+      mediaInfoCommand: "./bin/mediainfo-linux"
+    };
+  }
+  return {
+    smootherCommand: "./bin/tstools_bitrate_smoother",
+    metadataProbeCommand: "./bin/ffprobe",
+    ffmpegCommand: "./bin/ffmpeg",
+    mediaInfoCommand: "./bin/mediainfo"
+  };
+}
+
+function knownToolCommands(key: keyof ToolCommands): Set<string> {
+  const mac = defaultToolCommands("darwin");
+  const linux = defaultToolCommands("linux");
+  return new Set([mac[key], linux[key], basenameCommand(mac[key]), basenameCommand(linux[key])]);
+}
+
+function basenameCommand(command: string): string {
+  return path.basename(command);
 }

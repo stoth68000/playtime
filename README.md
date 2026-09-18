@@ -31,12 +31,14 @@ http://127.0.0.1:5173/docs
 
 Edit `data/settings.json` to point `libraryPaths` at your MPEG-TS library and adjust `smootherArgs` to match your `tstools_bitrate_smoother` command-line contract.
 
-For the bundled `tstools_bitrate_smoother` binary, use the real playout template in `data/settings.real-smoother.example.json`:
+For the bundled `tstools_bitrate_smoother` binary on macOS, use the real playout template in `data/settings.real-smoother.example.json`:
 
 ```json
 "smootherCommand": "./bin/tstools_bitrate_smoother",
 "smootherArgs": ["-i", "{file}", "-o", "{target}", "-l", "500"]
 ```
+
+On macOS, PlayTime defaults to `./bin/ffmpeg`, `./bin/ffprobe`, `./bin/mediainfo`, and `./bin/tstools_bitrate_smoother`. On Linux, it defaults to `./bin/ffmpeg-linux`, `./bin/ffprobe-linux`, `./bin/mediainfo-linux`, and the system `tstools_bitrate_smoother`.
 
 Collection playout targets can be UDP multicast/unicast or SRT caller-mode outputs:
 
@@ -47,7 +49,7 @@ srt://remotehost:port?latency=2000000
 
 ## Metadata
 
-PlayTime probes MPEG-TS files with the bundled static `ffprobe` by default:
+PlayTime probes MPEG-TS files with the platform-specific bundled static `ffprobe` by default:
 
 ```json
 "metadataProbeCommand": "./bin/ffprobe",
