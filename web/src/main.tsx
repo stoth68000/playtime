@@ -408,8 +408,8 @@ function App() {
         <div className="status-block">
           <span className="metric">{playouts.filter((p) => p.state === "running").length}</span>
           <span>running playouts</span>
-          <span className="git-version">GIT: {gitVersion || "unknown"}</span>
         </div>
+        <div className="git-version">GIT: {gitVersion || "unknown"}</div>
       </aside>
       <main>
         <header className="topbar">
@@ -683,6 +683,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
   const collectionIssues = active.playouts.flatMap((entry) => validateEntry(entry, files, active.playouts).map((issue) => `${entry.label || "Unnamed"}: ${issue}`));
   const enabledIssues = active.playouts.filter((entry) => entry.enabled).flatMap((entry) => validateEntry(entry, files, active.playouts));
   const validToStart = active.playouts.some((entry) => entry.enabled) && enabledIssues.length === 0;
+  const activeCollectionPlayouts = playouts.filter((playout) => playout.collectionName === active.name && ["starting", "running", "restarting", "stopping"].includes(playout.state)).length;
   const pickerFiles = files.filter((file) => {
     const q = pickerQuery.toLowerCase();
     return `${file.filename} ${file.path} ${file.sidecar?.comment ?? ""} ${file.metadata.codecs?.join(" ") ?? ""} ${file.metadata.serviceNames?.join(" ") ?? ""}`.toLowerCase().includes(q);
@@ -720,13 +721,17 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
     await removeCollection(savedVersion.name);
   };
   const startActiveCollection = async () => {
-    const activeJobCount = playouts.filter((playout) => playout.collectionName === active.name && ["starting", "running", "restarting", "stopping"].includes(playout.state)).length;
-    if (activeJobCount) {
-      const jobText = activeJobCount === 1 ? "running playout" : "running playouts";
-      if (!window.confirm(`Collection "${active.name}" already has ${activeJobCount} ${jobText}. Stop the existing collection and start again?`)) return;
+    if (activeCollectionPlayouts) {
+      const jobText = activeCollectionPlayouts === 1 ? "running playout" : "running playouts";
+      if (!window.confirm(`Collection "${active.name}" already has ${activeCollectionPlayouts} ${jobText}. Stop the existing collection and start again?`)) return;
       await stopCollection(active);
     }
     await startCollection(active);
+  };
+  const confirmStopCollection = async () => {
+    const playoutText = activeCollectionPlayouts === 1 ? "active playout" : "active playouts";
+    if (!window.confirm(`Are you sure you want to stop ${activeCollectionPlayouts} ${playoutText}?`)) return;
+    await stopCollection(active);
   };
   const openProbe = async (file: LibraryFile) => {
     setProbeFile(file);
@@ -751,7 +756,7 @@ function CollectionsPage(props: { collections: Collection[]; active: Collection;
           <span className={clsx("badge", dirty ? "warn" : "ok")}>{dirty ? "Unsaved" : "Saved"}</span>
           <button className="primary" disabled={collectionIssues.length > 0} onClick={() => void save()}><Save size={16} />Save</button>
           <button disabled={!validToStart} onClick={() => void startActiveCollection()}><Play size={16} />Start</button>
-          <button onClick={() => void stopCollection(active)}><Square size={16} />Stop</button>
+          <button disabled={!activeCollectionPlayouts} onClick={() => void confirmStopCollection()}><Square size={16} />Stop</button>
           <button className="danger-button" disabled={!savedVersion} onClick={() => void deleteCollection()}><Trash2 size={16} /></button>
         </div>
         <div className="collection-options">

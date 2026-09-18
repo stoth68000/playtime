@@ -127,8 +127,11 @@ nav button.active {
 
 .git-version {
   color: #667386;
-  font-size: 11px;
+  font-size: 9px;
   letter-spacing: 0;
+  line-height: 1.2;
+  margin-top: -12px;
+  padding: 0 2px;
 }
 
 main {
